@@ -88,30 +88,6 @@ export const Login: React.FC = () => {
           </p>
         </div>
 
-        {/* Quick Demo Credentials Bar */}
-        <div className="mb-6 p-3 bg-indigo-950/50 border border-indigo-800/60 rounded-2xl">
-          <p className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider mb-2 text-center">
-            Quick One-Click Demo Access
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('admin@crm.com', 'Admin@123456')}
-              className="flex items-center justify-center space-x-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-white text-[11px] font-bold py-2 px-2.5 rounded-xl transition-all"
-            >
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Demo</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDemoLogin('sarah@crm.com', 'Caller@123456')}
-              className="flex items-center justify-center space-x-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold py-2 px-2.5 rounded-xl transition-all border border-slate-700"
-            >
-              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Caller Demo</span>
-            </button>
-          </div>
-        </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
