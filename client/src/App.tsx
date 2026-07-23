@@ -10,7 +10,6 @@ import { DashboardLayout } from './layouts/DashboardLayout';
 
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
-import { ForgotPassword } from './pages/ForgotPassword';
 
 import { CallerDashboard } from './pages/CallerDashboard';
 import { LeadsPage } from './pages/LeadsPage';
@@ -60,7 +59,6 @@ export const App: React.FC = () => {
                 {/* Public Auth Routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<Signup />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
 
                 {/* Protected Caller Routes */}
                 <Route
