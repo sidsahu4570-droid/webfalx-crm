@@ -210,11 +210,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       )}
 
       <aside
-        className={`fixed md:sticky top-0 md:top-16 left-0 z-40 w-64 h-screen md:h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out ${
+        className={`fixed md:sticky top-0 md:top-16 left-0 z-40 w-64 h-[100dvh] md:h-[calc(100vh-4rem)] bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className="p-4 space-y-6 overflow-y-auto">
+        <div className="p-4 pb-28 space-y-6 overflow-y-auto">
           {/* Admin Navigation Section */}
           {user.role === 'admin' && (
             <div className="space-y-4">
