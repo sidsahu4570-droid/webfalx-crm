@@ -6,6 +6,7 @@
     "server"
   ],
   "scripts": {
+    "postinstall": "npm run build --prefix server",
     "build": "npm run build --prefix server",
     "start": "npm start --prefix server"
   }
