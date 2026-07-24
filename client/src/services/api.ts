@@ -25,16 +25,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Only purge session if server explicitly returns 401 with token invalid error
     if (error.response && error.response.status === 401) {
       const isAuthEndpoint = error.config.url?.includes('/auth/login') || error.config.url?.includes('/auth/register');
-      const isTokenError = error.response.data?.message?.toLowerCase().includes('token') ||
-                           error.response.data?.message?.toLowerCase().includes('authorized') ||
-                           error.response.data?.message?.toLowerCase().includes('expired');
-
-      if (!isAuthEndpoint && isTokenError) {
+      if (!isAuthEndpoint) {
         localStorage.removeItem('crm_token');
         localStorage.removeItem('crm_user');
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);
