@@ -7,9 +7,18 @@ import fs from 'fs';
 let mongoMemoryServer: MongoMemoryServer | null = null;
 
 export const connectDB = async (): Promise<typeof mongoose> => {
+  const isProduction = env.NODE_ENV === 'production';
+  const mongoUri = process.env.MONGODB_URI;
+
+  if (isProduction && !mongoUri) {
+    throw new Error('[Database Fatal Error] MONGODB_URI environment variable is required in production.');
+  }
+
+  const uriToConnect = mongoUri || env.MONGODB_URI;
+
   try {
-    const conn = await mongoose.connect(env.MONGODB_URI, { serverSelectionTimeoutMS: 2000 });
-    console.log(`[Database] Connected to primary MONGODB_URI: ${conn.connection.host}`);
+    const conn = await mongoose.connect(uriToConnect, { serverSelectionTimeoutMS: 5000 });
+    console.log(`[Database] Connected to MONGODB_URI successfully.`);
     
     // Safely drop legacy indexes on salarypayments
     try {
@@ -21,11 +30,16 @@ export const connectDB = async (): Promise<typeof mongoose> => {
         }
       }
     } catch (err) {
-      console.warn('[Database] Ignored index drop error on primary:', err);
+      console.warn('[Database] Ignored index drop error:', err);
     }
 
     return conn;
   } catch (error) {
+    if (isProduction) {
+      console.error(`[Database Fatal Error] Failed to connect to MongoDB in production:`, error);
+      throw error;
+    }
+
     console.warn(`[Database Notice] External MongoDB not reachable at ${env.MONGODB_URI}. Initializing persistent In-Memory MongoDB Server...`);
     try {
       const dbPath = path.join(__dirname, '../../.mongo_data');
@@ -42,9 +56,9 @@ export const connectDB = async (): Promise<typeof mongoose> => {
         });
       }
 
-      const mongoUri = mongoMemoryServer.getUri();
-      const conn = await mongoose.connect(mongoUri);
-      console.log(`[Database] Persistent In-Memory MongoDB running & connected at: ${mongoUri}`);
+      const memoryUri = mongoMemoryServer.getUri();
+      const conn = await mongoose.connect(memoryUri);
+      console.log(`[Database] Persistent In-Memory MongoDB running & connected at: ${memoryUri}`);
 
       // Safely drop legacy indexes on salarypayments
       try {
@@ -66,9 +80,9 @@ export const connectDB = async (): Promise<typeof mongoose> => {
         if (!mongoMemoryServer) {
           mongoMemoryServer = await MongoMemoryServer.create();
         }
-        const mongoUri = mongoMemoryServer.getUri();
-        const conn = await mongoose.connect(mongoUri);
-        console.log(`[Database] In-Memory MongoDB Server running & connected at: ${mongoUri}`);
+        const memoryUri = mongoMemoryServer.getUri();
+        const conn = await mongoose.connect(memoryUri);
+        console.log(`[Database] In-Memory MongoDB Server running & connected at: ${memoryUri}`);
 
         // Safely drop legacy indexes on salarypayments
         try {
