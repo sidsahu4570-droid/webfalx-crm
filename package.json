@@ -1,0 +1,12 @@
+{
+  "name": "crm-monorepo-root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "server"
+  ],
+  "scripts": {
+    "build": "npm run build --prefix server",
+    "start": "npm start --prefix server"
+  }
+}
