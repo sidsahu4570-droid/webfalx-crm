@@ -184,13 +184,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   return (
                     <div key={category.id} className="space-y-1">
                       {/* Static Category Header */}
-                      <div className="px-3 py-1 text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center space-x-1.5 border-b border-slate-100 dark:border-slate-800/40 pb-1.5 mb-1.5">
+                      <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest flex items-center space-x-2">
                         <CategoryIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-indigo-500' : 'text-slate-400'}`} />
-                        <span>{category.title}</span>
+                        <span className={hasActiveChild ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}>
+                          {category.title}
+                        </span>
                       </div>
 
-                      {/* Category Items */}
-                      <div className="space-y-0.5">
+                      {/* Category Items (Indented & Bordered Group) */}
+                      <div className="ml-4 pl-2.5 border-l border-slate-200/50 dark:border-slate-800/30 space-y-0.5 mt-1 mb-2">
                         {category.items.map((item) => {
                           const Icon = item.icon;
                           const isActive =
