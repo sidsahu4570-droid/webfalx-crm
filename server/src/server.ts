@@ -31,6 +31,7 @@ import { seedDefaultCities } from './utils/seedCities';
 import salaryRoutes from './routes/salaryRoutes';
 import salaryPaymentRoutes from './routes/salaryPaymentRoutes';
 import resourceRoutes from './routes/resourceRoutes';
+import { seedDatabase } from './utils/seed';
 
 const app = express();
 const server = http.createServer(app);
@@ -113,6 +114,7 @@ const startServer = async () => {
     await connectDB();
     await seedDefaultCategories();
     await seedDefaultCities();
+    await seedDatabase();
 
     server.listen(env.PORT, () => {
       console.log(`==================================================`);
