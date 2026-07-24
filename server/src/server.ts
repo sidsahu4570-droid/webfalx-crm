@@ -84,6 +84,10 @@ app.use('/api/salary', salaryRoutes);
 app.use('/api/salary-payments', salaryPaymentRoutes);
 app.use('/api/resources', resourceRoutes);
 
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'ProspectCRM API Server is running successfully!' });
+});
+
 // Error Handling Middleware
 app.use(errorHandler);
 
