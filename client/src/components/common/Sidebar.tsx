@@ -40,22 +40,71 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
 
 
-  const callerNavItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'New Leads', path: '/dashboard/new-leads', icon: Sparkles },
-    { label: 'My Prospects', path: '/dashboard/leads', icon: Users },
-    { label: 'Follow-ups Due', path: '/dashboard/followups', icon: CalendarCheck },
-    { label: 'Converted Clients', path: '/dashboard/converted-clients', icon: Briefcase },
-    { label: 'Website Progress', path: '/dashboard/website-progress', icon: Globe },
-    { label: 'My Earnings & Payments', path: '/dashboard/payments', icon: DollarSign },
-    { label: 'My Salary & Payments', path: '/dashboard/my-salary', icon: DollarSign },
-    { label: 'Meetings Schedule', path: '/dashboard/meetings', icon: Calendar },
-    { label: 'Leaderboard', path: '/leaderboard', icon: Trophy },
-    { label: 'Attendance', path: '/dashboard/attendance', icon: Clock },
-    { label: 'Bonus & Incentives', path: '/dashboard/bonus', icon: Award },
-    { label: 'Daily Work Reports', path: '/dashboard/reports', icon: FileText },
-    { label: 'Notes & Resources', path: '/dashboard/resources', icon: BookOpen },
-    { label: 'Account Settings', path: '/dashboard/settings', icon: Settings }
+  const callerCategories = [
+    {
+      id: 'dashboard',
+      title: 'Dashboard',
+      icon: LayoutDashboard,
+      items: [
+        { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard }
+      ]
+    },
+    {
+      id: 'lead_management',
+      title: 'Lead Management',
+      icon: Users,
+      items: [
+        { label: 'New Leads', path: '/dashboard/new-leads', icon: Sparkles },
+        { label: 'My Prospects', path: '/dashboard/leads', icon: Users },
+        { label: 'Follow-ups Due', path: '/dashboard/followups', icon: CalendarCheck },
+        { label: 'Converted Clients', path: '/dashboard/converted-clients', icon: Briefcase }
+      ]
+    },
+    {
+      id: 'project_management',
+      title: 'Project Management',
+      icon: Briefcase,
+      items: [
+        { label: 'Website Progress', path: '/dashboard/website-progress', icon: Globe },
+        { label: 'Meetings Schedule', path: '/dashboard/meetings', icon: Calendar }
+      ]
+    },
+    {
+      id: 'earnings_payroll',
+      title: 'Earnings & Payroll',
+      icon: DollarSign,
+      items: [
+        { label: 'My Earnings & Payments', path: '/dashboard/payments', icon: DollarSign },
+        { label: 'My Salary & Payments', path: '/dashboard/my-salary', icon: DollarSign },
+        { label: 'Bonus & Incentives', path: '/dashboard/bonus', icon: Award }
+      ]
+    },
+    {
+      id: 'performance',
+      title: 'Performance',
+      icon: Trophy,
+      items: [
+        { label: 'Leaderboard', path: '/leaderboard', icon: Trophy },
+        { label: 'Attendance', path: '/dashboard/attendance', icon: Clock },
+        { label: 'Daily Work Reports', path: '/dashboard/reports', icon: FileText }
+      ]
+    },
+    {
+      id: 'resources',
+      title: 'Resources',
+      icon: BookOpen,
+      items: [
+        { label: 'Notes & Resources', path: '/dashboard/resources', icon: BookOpen }
+      ]
+    },
+    {
+      id: 'settings',
+      title: 'Settings',
+      icon: Settings,
+      items: [
+        { label: 'Account Settings', path: '/dashboard/settings', icon: Settings }
+      ]
+    }
   ];
 
   const adminCategories = [
@@ -226,34 +275,56 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           )}
 
           {/* Main Caller Navigation */}
-          <div>
-            <div className="px-3 mb-2 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+          <div className="space-y-4">
+            <div className="px-3 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
               Caller Workspace
             </div>
-            <nav className="space-y-1">
-              {callerNavItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.path;
+            <div className="space-y-4">
+              {callerCategories.map((category) => {
+                const CategoryIcon = category.icon;
+                const hasActiveChild = category.items.some(item =>
+                  location.pathname === item.path
+                );
+
                 return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    onClick={onClose}
-                    className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
-                      isActive
-                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                      <span>{item.label}</span>
+                  <div key={category.id} className="space-y-1">
+                    {/* Static Category Header */}
+                    <div className="px-3 py-1 text-[10px] font-extrabold uppercase tracking-widest flex items-center space-x-2">
+                      <CategoryIcon className={`w-3.5 h-3.5 ${hasActiveChild ? 'text-indigo-500' : 'text-slate-400'}`} />
+                      <span className={hasActiveChild ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}>
+                        {category.title}
+                      </span>
                     </div>
-                    {isActive && <ChevronRight className="w-3.5 h-3.5" />}
-                  </NavLink>
+
+                    {/* Category Items (Indented & Bordered Group) */}
+                    <div className="ml-4 pl-2.5 border-l border-slate-200/50 dark:border-slate-800/30 space-y-0.5 mt-1 mb-2">
+                      {category.items.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = location.pathname === item.path;
+                        return (
+                          <NavLink
+                            key={item.path}
+                            to={item.path}
+                            onClick={onClose}
+                            className={`flex items-center justify-between px-3 py-2 rounded-lg text-[11px] font-semibold transition-all ${
+                              isActive
+                                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-500/25'
+                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2">
+                              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                              <span>{item.label}</span>
+                            </div>
+                            {isActive && <ChevronRight className="w-3.5 h-3.5" />}
+                          </NavLink>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
-            </nav>
+            </div>
           </div>
         </div>
       </aside>
