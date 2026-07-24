@@ -39,7 +39,20 @@ const server = http.createServer(app);
 app.use(helmet());
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      const isAllowed =
+        origin.startsWith('http://localhost') ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('sidharthsahu.com') ||
+        origin === env.CLIENT_URL;
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true
   })
 );
