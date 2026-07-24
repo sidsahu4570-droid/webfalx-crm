@@ -8,7 +8,7 @@ import { City } from '../models/City';
 import { User } from '../models/User';
 
 // Load environment variables
-dotenv.config({ path: path.join(__dirname, '../../.env') });
+dotenv.config({ path: path.join(__dirname, '../../env') });
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/crm_db';
 
@@ -55,27 +55,22 @@ const run = async () => {
     const headers = parseCSVLine(lines[0]);
     console.log('[Importer] Found headers:', headers);
 
-    // Get or create a default city
-    let defaultCity = await City.findOne({ name: /Hubli/i });
-    if (!defaultCity) {
-      defaultCity = await City.create({ name: 'Hubli' });
-      console.log('[Importer] Created default City: Hubli');
-    }
-
     // Get an admin user to use as default creator for notes if needed
     const defaultAdmin = await User.findOne({ role: 'admin' });
     if (!defaultAdmin) {
-      console.error('[Importer] No admin user found to associate note creation logs.');
+      console.error('[Importer] No admin user found in database to associate note creation logs.');
       process.exit(1);
     }
 
     let successCount = 0;
     let skipCount = 0;
     let errorCount = 0;
+    const failedLeadsReport: Array<{ name: string; phone: string; reason: string }> = [];
 
-    // Cache categories, users to avoid hitting database repeatedly in loop
+    // Cache categories, users, cities to avoid hitting database repeatedly in loop
     const categoryCache = new Map<string, any>();
     const userCache = new Map<string, any>();
+    const cityCache = new Map<string, any>();
 
     // Counter for serial numbers
     const maxLead = await Lead.findOne({ serialNumber: { $exists: true, $ne: null } }).sort({ serialNumber: -1 });
@@ -135,30 +130,80 @@ const run = async () => {
         categoryId = cat._id;
       }
 
-      // 2. Resolve Caller (User)
-      const callerEmail = row.caller_email || 'sarah@crm.com';
-      const callerName = row.caller_name || 'Sarah Jenkins';
-      let userId = null;
-      if (userCache.has(callerEmail.toLowerCase())) {
-        const usr = userCache.get(callerEmail.toLowerCase());
-        userId = usr._id;
-      } else {
-        let usr = await User.findOne({ email: new RegExp(`^${callerEmail}$`, 'i') });
-        if (!usr) {
-          usr = await User.create({
-            name: callerName,
-            email: callerEmail.toLowerCase(),
-            password: 'Caller@123456',
-            role: 'caller',
-            isActive: true
-          });
-          console.log(`[Importer] Created new caller account for: ${callerName} (${callerEmail})`);
+      // 2. Resolve Caller (User) - Strict match, no auto-creation
+      const callerEmail = (row.caller_email || '').trim();
+      const callerName = (row.caller_name || '').trim();
+      let matchedUser = null;
+
+      if (callerEmail) {
+        if (userCache.has(`email:${callerEmail.toLowerCase()}`)) {
+          matchedUser = userCache.get(`email:${callerEmail.toLowerCase()}`);
+        } else {
+          matchedUser = await User.findOne({ email: new RegExp(`^${callerEmail}$`, 'i') });
+          if (matchedUser) {
+            userCache.set(`email:${callerEmail.toLowerCase()}`, matchedUser);
+          }
         }
-        userCache.set(callerEmail.toLowerCase(), usr);
-        userId = usr._id;
       }
 
-      // 3. Normalize Status
+      if (!matchedUser && callerName) {
+        if (userCache.has(`name:${callerName.toLowerCase()}`)) {
+          matchedUser = userCache.get(`name:${callerName.toLowerCase()}`);
+        } else {
+          matchedUser = await User.findOne({ name: new RegExp(`^${callerName}$`, 'i') });
+          if (matchedUser) {
+            userCache.set(`name:${callerName.toLowerCase()}`, matchedUser);
+          }
+        }
+      }
+
+      if (!matchedUser) {
+        errorCount++;
+        failedLeadsReport.push({
+          name: name || 'Unnamed',
+          phone: phone || 'N/A',
+          reason: `No matching caller found for email "${callerEmail}" or name "${callerName}".`
+        });
+        continue;
+      }
+
+      const userId = matchedUser._id;
+      const finalCallerName = matchedUser.name;
+      const finalCallerEmail = matchedUser.email;
+
+      // 3. Resolve City (Read from City column or extract from import details)
+      let cityNameInput = row.city || row.city_name || row.cityName || row.City || '';
+      
+      // Fallback: If no explicit city field, extract from latest_update (e.g. "Imported from Hubli CRM 3.csv")
+      if (!cityNameInput && row.latest_update && typeof row.latest_update === 'string') {
+        const fileMatch = row.latest_update.match(/Imported from\s+([A-Za-z]+)\s+CRM/i);
+        if (fileMatch && fileMatch[1]) {
+          cityNameInput = fileMatch[1];
+        }
+      }
+      
+      if (!cityNameInput) {
+        cityNameInput = 'Hubli'; // fallback default if nothing else is found
+      }
+
+      const cleanCityName = cityNameInput.trim();
+      let cityId = null;
+      let cityName = cleanCityName;
+
+      if (cityCache.has(cleanCityName.toLowerCase())) {
+        const city = cityCache.get(cleanCityName.toLowerCase());
+        cityId = city._id;
+      } else {
+        let city = await City.findOne({ name: new RegExp(`^${cleanCityName}$`, 'i') });
+        if (!city) {
+          city = await City.create({ name: cleanCityName });
+          console.log(`[Importer] Created new City: ${cleanCityName}`);
+        }
+        cityCache.set(cleanCityName.toLowerCase(), city);
+        cityId = city._id;
+      }
+
+      // 4. Normalize Status
       let status: LeadStatus = 'New';
       const rawStatus = (row.status || '').toLowerCase();
       if (rawStatus === 'new') status = 'New';
@@ -170,13 +215,13 @@ const run = async () => {
       else if (rawStatus === 'closed') status = 'Closed';
       else if (rawStatus === 'not_picked' || rawStatus === 'not picked') status = 'Not Picked';
 
-      // 4. Normalize Priority
+      // 5. Normalize Priority
       let priority: LeadPriority = 'Medium';
       const rawPriority = (row.priority || '').toLowerCase();
       if (rawPriority === 'low') priority = 'Low';
       else if (rawPriority === 'high') priority = 'High';
 
-      // 5. Parse Notes
+      // 6. Parse Notes
       const notesList: any[] = [];
       try {
         if (row.notes) {
@@ -186,7 +231,7 @@ const run = async () => {
               notesList.push({
                 content: n.content || n,
                 createdBy: userId || defaultAdmin._id,
-                createdByName: callerName || 'System',
+                createdByName: finalCallerName || 'System',
                 createdAt: n.createdAt ? new Date(n.createdAt) : new Date()
               });
             });
@@ -198,7 +243,7 @@ const run = async () => {
           notesList.push({
             content: row.notes.trim(),
             createdBy: userId || defaultAdmin._id,
-            createdByName: callerName || 'System',
+            createdByName: finalCallerName || 'System',
             createdAt: new Date()
           });
         }
@@ -212,13 +257,16 @@ const run = async () => {
         ? new Date(row.last_contact_date)
         : undefined;
 
-      // 6. Create Lead
+      const createdAt = row.created_date && !isNaN(Date.parse(row.created_date)) ? new Date(row.created_date) : new Date();
+      const updatedAt = row.updated_date && !isNaN(Date.parse(row.updated_date)) ? new Date(row.updated_date) : new Date();
+
+      // 7. Create Lead (Direct write to preserve original Created Date and Updated Date timestamps)
       try {
-        await Lead.create({
+        await Lead.collection.insertOne({
           serialNumber: serialCounter++,
           userId,
-          callerName,
-          callerEmail,
+          callerName: finalCallerName,
+          callerEmail: finalCallerEmail,
           leadType: row.lead_type || 'imported',
           isNewLead: row.is_new_lead === 'true',
           name,
@@ -231,25 +279,45 @@ const run = async () => {
           priority,
           categoryId,
           categoryName,
-          cityId: defaultCity._id,
-          cityName: defaultCity.name,
+          cityId,
+          cityName,
           notes: notesList,
           latestUpdate: row.latest_update || 'Lead imported',
           completedFollowUps: parseInt(row.completed_follow_ups, 10) || 0,
           nextFollowUpDate,
-          lastContactDate
+          lastContactDate,
+          createdAt,
+          updatedAt
         });
         successCount++;
       } catch (err) {
         console.error(`[Importer] Error creating lead: ${name}`, err);
         errorCount++;
+        failedLeadsReport.push({
+          name: name || 'Unnamed',
+          phone: phone || 'N/A',
+          reason: `Database error: ${(err as any).message}`
+        });
       }
     }
 
-    console.log(`[Importer] Import completed!`);
-    console.log(`- Successfully imported: ${successCount} leads`);
-    console.log(`- Skipped (duplicates/empty): ${skipCount} leads`);
-    console.log(`- Failed imports: ${errorCount} leads`);
+    // Print Import Summary
+    console.log('\n==================================================');
+    console.log('              CSV IMPORT SUMMARY                 ');
+    console.log('==================================================');
+    console.log(`Total Rows Parsed:     ${lines.length - 1}`);
+    console.log(`Successfully Imported: ${successCount}`);
+    console.log(`Skipped (Duplicates):  ${skipCount}`);
+    console.log(`Failed (No Match/Err): ${errorCount}`);
+    console.log('==================================================');
+    
+    if (failedLeadsReport.length > 0) {
+      console.log('\n❌ FAILED RECORDS REPORT:');
+      failedLeadsReport.forEach((f, idx) => {
+        console.log(`  ${idx + 1}. Lead: "${f.name}" | Phone: "${f.phone}" | Reason: ${f.reason}`);
+      });
+      console.log('==================================================\n');
+    }
 
   } catch (err) {
     console.error('[Importer Error]', err);
