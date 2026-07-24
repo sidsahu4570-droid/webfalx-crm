@@ -172,6 +172,16 @@ export const getLeadById = async (req: Request, res: Response) => {
 export const createLead = async (req: Request, res: Response) => {
   try {
     const user = req.user!;
+    
+    // Enforce CRM total lead capacity limit (50,000 max)
+    const totalLeadsCount = await Lead.countDocuments();
+    if (totalLeadsCount >= 50000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'CRM lead capacity limit reached (maximum 50,000 leads allowed)' 
+      });
+    }
+
     const {
       serialNumber,
       name,
@@ -638,6 +648,15 @@ export const importExcelLeads = async (req: Request, res: Response) => {
 
     if (!Array.isArray(rawLeads) || rawLeads.length === 0) {
       return res.status(400).json({ success: false, message: 'No valid lead rows provided for import' });
+    }
+
+    // Enforce CRM total lead capacity limit (50,000 max)
+    const totalLeadsCount = await Lead.countDocuments();
+    if (totalLeadsCount + rawLeads.length > 50000) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Import failed: This import would exceed the CRM limit of 50,000 total leads. Current lead count: ${totalLeadsCount}.` 
+      });
     }
 
     const assignedCaller = await User.findById(assignedCallerId);
