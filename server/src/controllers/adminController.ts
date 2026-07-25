@@ -270,7 +270,7 @@ function parseCSVLine(line: string): string[] {
 
 export const importLeadsMigrationController = async (req: Request, res: Response) => {
   try {
-    const csvPath = path.join(__dirname, '../../../Leads.csv');
+    const csvPath = path.join(__dirname, '../../../csv_2_mangodb/Leads.csv');
     if (!fs.existsSync(csvPath)) {
       return res.status(404).json({ success: false, message: `Leads.csv not found at: ${csvPath}` });
     }

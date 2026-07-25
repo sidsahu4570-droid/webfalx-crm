@@ -38,7 +38,7 @@ const run = async () => {
     console.log('[Importer] Connected successfully!');
 
     // Read CSV file
-    const csvPath = path.join(__dirname, '../../../Leads.csv');
+    const csvPath = path.join(__dirname, '../../../csv_2_mangodb/Leads.csv');
     if (!fs.existsSync(csvPath)) {
       console.error('[Importer] Leads.csv not found at:', csvPath);
       process.exit(1);
