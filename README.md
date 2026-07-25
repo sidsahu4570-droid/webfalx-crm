@@ -80,7 +80,7 @@ cd server
 npm install
 npm run dev
 ```
-*The server will start at `http://localhost:5000` and automatically seed default admin (`admin@crm.com` / `Admin@123456`) and caller accounts into MongoDB.*
+*The server will start at `http://localhost:5000` and automatically seed default admin and caller accounts into MongoDB.*
 
 ### 2. Start Frontend App
 ```bash
@@ -89,11 +89,3 @@ npm install
 npm run dev
 ```
 *The frontend will run at `http://localhost:5173`.*
-
----
-
-## 🔒 Default Demo Credentials
-
-- **Admin Account**: `admin@crm.com` / `Admin@123456`
-- **Caller 1**: `sarah@crm.com` / `Caller@123456`
-- **Caller 2**: `michael@crm.com` / `Caller@123456`
