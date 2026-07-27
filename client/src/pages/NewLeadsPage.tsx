@@ -318,6 +318,17 @@ export const NewLeadsPage: React.FC = () => {
           await leadService.deleteLead(l._id);
           fetchNewLeads();
         }}
+        onDeleteMultipleLeads={async (ids) => {
+          try {
+            const res = await leadService.deleteMultipleLeads(ids);
+            if (res.success) {
+              toast('Leads Deleted', `Successfully moved ${ids.length} leads to Trash History`, 'success');
+              fetchNewLeads();
+            }
+          } catch (err: any) {
+            toast('Deletion Error', err.message, 'error');
+          }
+        }}
         onQuickNote={(l) => {
           setDetailLead(l);
         }}

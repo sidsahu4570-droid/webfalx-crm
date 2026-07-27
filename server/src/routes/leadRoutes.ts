@@ -5,6 +5,7 @@ import {
   createLead,
   updateLead,
   deleteLead,
+  bulkDeleteLeads,
   addNote,
   completeFollowUp,
   importExcelLeads,
@@ -21,6 +22,7 @@ router.use(protect);
 router.get('/', getLeads);
 router.get('/import-history', authorize('admin'), getImportHistory);
 router.post('/import-excel', authorize('admin'), importExcelLeads);
+router.post('/bulk-delete', bulkDeleteLeads);
 router.get('/:id', getLeadById);
 router.post('/', createLead);
 router.put('/:id', updateLead);

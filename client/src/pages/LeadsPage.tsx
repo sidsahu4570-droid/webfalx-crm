@@ -397,6 +397,17 @@ export const LeadsPage: React.FC = () => {
           onSelectLead={(l) => setDetailLead(l)}
           onEditLead={(l) => { setEditingLead(l); setAddEditModalOpen(true); }}
           onDeleteLead={(l) => { setLeadToDelete(l); setDeleteConfirmOpen(true); }}
+          onDeleteMultipleLeads={async (ids) => {
+            try {
+              const res = await leadService.deleteMultipleLeads(ids);
+              if (res.success) {
+                toast('Leads Deleted', `Successfully moved ${ids.length} leads to Trash History`, 'success');
+                fetchLeads();
+              }
+            } catch (err: any) {
+              toast('Deletion Error', err.message, 'error');
+            }
+          }}
           onQuickNote={(l) => { setQuickNoteLead(l); setQuickNoteText(''); }}
           onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
           showCallerColumn={user?.role === 'admin'}

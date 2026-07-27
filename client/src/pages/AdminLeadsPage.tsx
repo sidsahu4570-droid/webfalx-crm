@@ -224,6 +224,17 @@ export const AdminLeadsPage: React.FC = () => {
           onSelectLead={(l) => setSelectedLead(l)}
           onEditLead={(l) => setSelectedLead(l)}
           onDeleteLead={() => {}}
+          onDeleteMultipleLeads={async (ids) => {
+            try {
+              const res = await leadService.deleteMultipleLeads(ids);
+              if (res.success) {
+                toast('Leads Deleted', `Successfully moved ${ids.length} leads to Trash History`, 'success');
+                fetchAllLeads();
+              }
+            } catch (err: any) {
+              toast('Deletion Error', err.message, 'error');
+            }
+          }}
           onQuickNote={(l) => setSelectedLead(l)}
           onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
           showCallerColumn={true}

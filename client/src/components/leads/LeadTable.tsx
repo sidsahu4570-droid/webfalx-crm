@@ -35,6 +35,7 @@ interface LeadTableProps {
   onSelectLead: (lead: Lead) => void;
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (lead: Lead) => void;
+  onDeleteMultipleLeads?: (ids: string[]) => void;
   onQuickNote: (lead: Lead) => void;
   onCompleteFollowUp: (lead: Lead) => void;
   showCallerColumn?: boolean;
@@ -45,6 +46,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onSelectLead,
   onEditLead,
   onDeleteLead,
+  onDeleteMultipleLeads,
   onQuickNote,
   onCompleteFollowUp,
   showCallerColumn = false
@@ -99,6 +101,15 @@ export const LeadTable: React.FC<LeadTableProps> = ({
     exportLeadsToCSV(selectedLeads.length > 0 ? selectedLeads : leads, 'Bulk_Exported_Leads.csv');
   };
 
+  const handleBulkDelete = () => {
+    if (!onDeleteMultipleLeads) return;
+    const confirmDelete = window.confirm(`Are you sure you want to delete all ${selectedIds.length} selected leads?`);
+    if (confirmDelete) {
+      onDeleteMultipleLeads(selectedIds);
+      setSelectedIds([]);
+    }
+  };
+
   // Formula Engine Calculations for Summary Bar
   const totalCount = FormulaEngine.COUNTA(leads);
   const convertedCount = FormulaEngine.COUNT(leads.filter((l) => l.status === 'Converted'));
@@ -117,6 +128,15 @@ export const LeadTable: React.FC<LeadTableProps> = ({
           </div>
 
           <div className="flex items-center space-x-2">
+            {onDeleteMultipleLeads && (
+              <button
+                onClick={handleBulkDelete}
+                className="bg-red-600 hover:bg-red-500 text-white font-bold px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all shadow-md"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete Selected</span>
+              </button>
+            )}
             <button
               onClick={handleBulkExport}
               className="bg-white/10 hover:bg-white/20 text-white font-bold px-3 py-1.5 rounded-xl flex items-center space-x-1 transition-all"

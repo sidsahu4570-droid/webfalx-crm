@@ -471,6 +471,70 @@ export const deleteLead = async (req: Request, res: Response) => {
   }
 };
 
+export const bulkDeleteLeads = async (req: Request, res: Response) => {
+  try {
+    const user = req.user!;
+    const { leadIds } = req.body;
+
+    if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'No lead IDs provided for deletion' });
+    }
+
+    const successfulIds = [];
+
+    for (const id of leadIds) {
+      const lead = await Lead.findById(id);
+      if (!lead) continue;
+
+      if (user.role === 'caller' && lead.userId.toString() !== user.id) {
+        continue;
+      }
+
+      const targetUserId = lead.userId.toString();
+      const leadName = lead.name;
+
+      await DeletedRecord.create({
+        originalId: lead._id.toString(),
+        collectionName: 'Lead',
+        clientName: lead.name,
+        company: lead.company || '',
+        phone: lead.phone || '',
+        email: lead.email || '',
+        deletionDate: new Date(),
+        deletedBy: user.name,
+        deletedByRole: user.role,
+        deletionReason: 'Bulk deleted by user',
+        data: lead.toObject()
+      });
+
+      await Lead.findByIdAndDelete(id);
+
+      await logActivity({
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'DELETE_LEAD',
+        leadId: id,
+        leadName,
+        details: `Moved lead ${leadName} to Trash History (Bulk)`
+      });
+
+      emitToUser(targetUserId, 'lead_deleted', { leadId: id });
+      emitToAdmin('lead_deleted', { leadId: id });
+
+      successfulIds.push(id);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully moved ${successfulIds.length} leads to Trash History.`,
+      deletedCount: successfulIds.length
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};
+
 export const addNote = async (req: Request, res: Response) => {
   try {
     const user = req.user!;

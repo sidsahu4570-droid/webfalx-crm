@@ -27,6 +27,11 @@ export const leadService = {
     return res.data;
   },
 
+  deleteMultipleLeads: async (ids: string[]): Promise<{ success: boolean; message: string }> => {
+    const res = await api.post('/leads/bulk-delete', { leadIds: ids });
+    return res.data;
+  },
+
   addNote: async (
     id: string,
     content: string,
