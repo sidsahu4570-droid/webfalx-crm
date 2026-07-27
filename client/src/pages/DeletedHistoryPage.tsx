@@ -206,7 +206,106 @@ export const DeletedHistoryPage: React.FC = () => {
         <LoadingSpinner text="Fetching deleted client archive..." />
       ) : (
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm space-y-4">
-          <div className="overflow-x-auto">
+          {/* Mobile Card List (Visible below md) */}
+          <div className="md:hidden space-y-4 font-sans">
+            {records.length > 0 ? (
+              records.map((r) => (
+                <div
+                  key={r._id}
+                  className="bg-slate-50 dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/85 space-y-4"
+                >
+                  {/* Header: Project type & Deletion Date */}
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/50 pb-2.5">
+                    <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                      r.projectType === 'app'
+                        ? 'bg-purple-500/10 text-purple-650 dark:text-purple-400 border-purple-500/20'
+                        : 'bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-500/20'
+                    }`}>
+                      {r.projectType === 'app' ? 'App Project' : 'Website Project'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Deleted: {formatDateTime(r.deletionDate)}
+                    </span>
+                  </div>
+
+                  {/* Client Info */}
+                  <div>
+                    <h4 className="font-extrabold text-slate-900 dark:text-white text-base leading-tight">
+                      {r.clientName}
+                    </h4>
+                    <span className="text-[11px] text-slate-500 block mt-1 font-medium">
+                      {r.company || 'No Company'} • {r.phone || 'No Phone'}
+                    </span>
+                    {r.email && (
+                      <span className="text-[10px] text-slate-400 font-mono block mt-0.5 select-all">
+                        {r.email}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Financial Deal Details */}
+                  <div className="grid grid-cols-2 gap-2 bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800 text-center font-mono">
+                    <div>
+                      <span className="text-[9px] text-slate-450 font-sans block uppercase">Total Deal</span>
+                      <span className="font-extrabold text-slate-900 dark:text-white text-xs block mt-0.5">
+                        {formatINR(r.totalAmount)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-emerald-650/80 font-sans block uppercase">Paid Amount</span>
+                      <span className="font-extrabold text-emerald-650 dark:text-emerald-400 text-xs block mt-0.5">
+                        {formatINR(r.paidAmount)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Caller Information */}
+                  <div className="text-xs text-slate-600 dark:text-slate-350 bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/50 dark:border-slate-800">
+                    <div className="flex items-center space-x-1.5">
+                      <UserCheck className="w-3.5 h-3.5 text-indigo-500" />
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">Original Caller:</span>
+                      <span className="font-medium text-slate-800 dark:text-slate-250">{r.callerName || 'N/A'}</span>
+                    </div>
+                  </div>
+
+                  {/* Deletion Metadata (Reason & Deleted By) */}
+                  <div className="bg-rose-50/20 dark:bg-rose-950/5 p-3 rounded-xl border border-rose-500/10 space-y-1.5 text-xs text-slate-650 dark:text-slate-300">
+                    <div>
+                      <strong className="text-slate-800 dark:text-white">Deleted By:</strong> {r.deletedBy} ({r.deletedByRole})
+                    </div>
+                    <div className="italic">
+                      <strong className="text-slate-800 dark:text-white not-italic">Reason:</strong> "{r.deletionReason || 'Soft deleted'}"
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex space-x-2 pt-2 border-t border-slate-200 dark:border-slate-700/50 justify-end">
+                    <button
+                      onClick={() => handleRestore(r._id, r.clientName)}
+                      className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-xl shadow-sm inline-flex items-center justify-center space-x-1 transition-all"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Restore Client</span>
+                    </button>
+                    <button
+                      onClick={() => handlePermanentDelete(r._id, r.clientName)}
+                      className="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded-xl shadow-sm inline-flex items-center justify-center space-x-1 transition-all"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Purge</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-6 text-center text-xs text-slate-400 italic">
+                No deleted clients found in Trash Archive.
+              </div>
+            )}
+          </div>
+
+          {/* Desktop Table (Hidden on Mobile) */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[950px]">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
@@ -233,15 +332,15 @@ export const DeletedHistoryPage: React.FC = () => {
                       <td className="py-3.5 px-4 font-sans">
                         <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                           r.projectType === 'app'
-                            ? 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-                            : 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20'
+                            ? 'bg-purple-500/10 text-purple-650 dark:text-purple-400 border-purple-500/20'
+                            : 'bg-indigo-500/10 text-indigo-650 dark:text-indigo-400 border-indigo-500/20'
                         }`}>
                           {r.projectType === 'app' ? 'App Project' : 'Website Project'}
                         </span>
                       </td>
                       <td className="py-3.5 px-4 font-extrabold text-slate-900 dark:text-white font-mono">
                         {formatINR(r.totalAmount)}
-                        <span className="text-[10px] text-emerald-600 block font-normal">
+                        <span className="text-[10px] text-emerald-650 block font-normal">
                           Paid: {formatINR(r.paidAmount)}
                         </span>
                       </td>
@@ -254,22 +353,22 @@ export const DeletedHistoryPage: React.FC = () => {
                       <td className="py-3.5 px-4 font-sans text-slate-700 dark:text-slate-300 font-semibold">
                         {r.deletedBy} ({r.deletedByRole})
                       </td>
-                      <td className="py-3.5 px-4 font-sans text-slate-500 italic">
+                      <td className="py-3.5 px-4 font-sans text-slate-505 italic">
                         {r.deletionReason || 'Soft deleted'}
                       </td>
                       <td className="py-3.5 px-4 text-right space-x-1.5 font-sans">
                         <button
                           onClick={() => handleRestore(r._id, r.clientName)}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-sm inline-flex items-center space-x-1"
+                          className="bg-emerald-650 hover:bg-emerald-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-sm inline-flex items-center space-x-1"
                         >
-                          <RotateCcw className="w-3 h-3" />
+                          <RotateCcw className="w-3.5 h-3.5" />
                           <span>Restore Client</span>
                         </button>
                         <button
                           onClick={() => handlePermanentDelete(r._id, r.clientName)}
                           className="bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-sm inline-flex items-center space-x-1"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                           <span>Purge</span>
                         </button>
                       </td>

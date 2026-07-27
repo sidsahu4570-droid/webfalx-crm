@@ -3,6 +3,7 @@ import { DirectCallButton } from '../common/DirectCallButton';
 import { Lead } from '../../types';
 import { FormulaEngine } from '../../utils/formulaEngine';
 import { WhatsAppModal } from '../whatsapp/WhatsAppModal';
+import { LeadCardMobile } from './LeadCardMobile';
 import {
   getStatusBadgeStyle,
   getStatusRowStyle,
@@ -158,8 +159,35 @@ export const LeadTable: React.FC<LeadTableProps> = ({
         </div>
       )}
 
-      {/* Main Table Container */}
-      <div className="w-full overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      {/* Mobile Card Layout list */}
+      <div className="md:hidden space-y-4">
+        {sortedLeads.map((lead, idx) => {
+          const isSelected = selectedIds.includes(lead._id);
+          const pageNum = currentPage || 1;
+          const sizeNum = pageSize || leads.length || 50;
+          const sNoDisplay = (pageNum - 1) * sizeNum + idx + 1;
+
+          return (
+            <LeadCardMobile
+              key={lead._id}
+              lead={lead}
+              sNoDisplay={sNoDisplay}
+              isSelected={isSelected}
+              onToggleSelect={handleSelectOne}
+              onSelect={() => onSelectLead(lead)}
+              onEdit={() => onEditLead(lead)}
+              onDelete={() => onDeleteLead(lead)}
+              onQuickNote={() => onQuickNote(lead)}
+              onCompleteFollowUp={() => onCompleteFollowUp(lead)}
+              onWhatsapp={lead.phone ? () => setWhatsappLead(lead) : undefined}
+              showCallerInfo={showCallerColumn}
+            />
+          );
+        })}
+      </div>
+
+      {/* Main Table Container (Desktop Only) */}
+      <div className="hidden md:block w-full overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <table className="w-full text-left border-collapse min-w-[950px]">
           <thead>
             <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider sticky top-0 backdrop-blur-md z-10">
@@ -321,12 +349,12 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                   <td className="py-4 px-4">
                     {lead.nextFollowUpDate ? (
                       <div className="space-y-1">
-                        <div className={`flex items-center font-bold text-xs ${isDue ? 'text-amber-600 dark:text-amber-400' : 'text-slate-700 dark:text-slate-300'}`}>
+                        <div className={`flex items-center font-bold text-xs ${isDue ? 'text-amber-600 dark:text-amber-455' : 'text-slate-700 dark:text-slate-300'}`}>
                           <Calendar className="w-3.5 h-3.5 mr-1" />
                           <span>{formatDate(lead.nextFollowUpDate)}</span>
                         </div>
                         {isDue && (
-                          <span className="inline-block text-[9px] bg-amber-500/10 text-amber-600 border border-amber-500/20 px-1.5 py-0.5 rounded font-extrabold animate-pulse">
+                          <span className="inline-block text-[9px] bg-amber-500/10 text-amber-650 border border-amber-500/20 px-1.5 py-0.5 rounded font-extrabold animate-pulse">
                             DUE NOW
                           </span>
                         )}
@@ -351,28 +379,28 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                       <button
                         onClick={() => onQuickNote(lead)}
                         title="Add Conversation Note"
-                        className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-xl transition-all"
+                        className="p-1.5 text-slate-500 hover:text-indigo-605 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-xl transition-all"
                       >
                         <MessageSquarePlus className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => onCompleteFollowUp(lead)}
                         title="Mark Follow-up Complete"
-                        className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-xl transition-all"
+                        className="p-1.5 text-slate-505 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 rounded-xl transition-all"
                       >
                         <CheckCircle className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => onEditLead(lead)}
                         title="Edit Prospect"
-                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-xl transition-all"
+                        className="p-1.5 text-slate-505 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-xl transition-all"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => onDeleteLead(lead)}
                         title="Delete Prospect"
-                        className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-all"
+                        className="p-1.5 text-slate-505 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-all"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -383,17 +411,17 @@ export const LeadTable: React.FC<LeadTableProps> = ({
             })}
           </tbody>
         </table>
+      </div>
 
-        {/* Excel Formula Calculation Engine Summary Bar */}
-        <div className="bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 p-3 px-4 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-          <div className="flex items-center space-x-4">
-            <span className="font-sans font-bold text-slate-500 uppercase text-[10px] tracking-wider">Formula Engine:</span>
-            <span className="text-slate-800 dark:text-slate-200 font-bold">COUNT(Leads) = {totalCount}</span>
-            <span className="text-emerald-600 dark:text-emerald-400 font-bold">COUNT(Converted) = {convertedCount}</span>
-            <span className="text-indigo-600 dark:text-indigo-400 font-bold">COUNTA(Phone Contacts) = {validContacts}</span>
-          </div>
-          <span className="text-[11px] text-slate-400 font-sans italic">Click headers to sort ascending / descending</span>
+      {/* Excel Formula Calculation Engine Summary Bar */}
+      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-205 dark:border-slate-800 rounded-3xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="font-sans font-bold text-slate-500 uppercase text-[10px] tracking-wider">Formula Engine:</span>
+          <span className="text-slate-800 dark:text-slate-200 font-bold">COUNT(Leads) = {totalCount}</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">COUNT(Converted) = {convertedCount}</span>
+          <span className="text-indigo-650 dark:text-indigo-400 font-bold">COUNTA(Phone Contacts) = {validContacts}</span>
         </div>
+        <span className="text-[11px] text-slate-400 font-sans italic">Click headers to sort ascending / descending</span>
       </div>
 
       {/* WhatsApp Modal */}
