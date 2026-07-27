@@ -411,6 +411,8 @@ export const LeadsPage: React.FC = () => {
           onQuickNote={(l) => { setQuickNoteLead(l); setQuickNoteText(''); }}
           onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
           showCallerColumn={user?.role === 'admin'}
+          currentPage={page}
+          pageSize={15}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

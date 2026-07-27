@@ -238,6 +238,8 @@ export const AdminLeadsPage: React.FC = () => {
           onQuickNote={(l) => setSelectedLead(l)}
           onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
           showCallerColumn={true}
+          currentPage={1}
+          pageSize={50}
         />
       )}
 

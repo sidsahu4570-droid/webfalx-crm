@@ -334,6 +334,8 @@ export const NewLeadsPage: React.FC = () => {
         }}
         onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
         showCallerColumn={isAdmin}
+        currentPage={page}
+        pageSize={50}
       />
 
       {/* Pagination Footer */}

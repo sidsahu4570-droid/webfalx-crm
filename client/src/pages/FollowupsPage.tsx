@@ -166,6 +166,8 @@ export const FollowupsPage: React.FC = () => {
           onDeleteLead={() => {}}
           onQuickNote={(l) => setSelectedLead(l)}
           onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
+          currentPage={1}
+          pageSize={50}
         />
       )}
 

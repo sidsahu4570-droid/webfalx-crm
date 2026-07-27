@@ -39,6 +39,8 @@ interface LeadTableProps {
   onQuickNote: (lead: Lead) => void;
   onCompleteFollowUp: (lead: Lead) => void;
   showCallerColumn?: boolean;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export const LeadTable: React.FC<LeadTableProps> = ({
@@ -49,7 +51,9 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onDeleteMultipleLeads,
   onQuickNote,
   onCompleteFollowUp,
-  showCallerColumn = false
+  showCallerColumn = false,
+  currentPage,
+  pageSize
 }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [whatsappLead, setWhatsappLead] = useState<Lead | null>(null);
@@ -209,7 +213,9 @@ export const LeadTable: React.FC<LeadTableProps> = ({
               const isDue = isFollowUpDue(lead.nextFollowUpDate);
               const rowStyle = getStatusRowStyle(lead.status);
               const isSelected = selectedIds.includes(lead._id);
-              const sNoDisplay = lead.serialNumber || idx + 1;
+              const pageNum = currentPage || 1;
+              const sizeNum = pageSize || leads.length || 50;
+              const sNoDisplay = (pageNum - 1) * sizeNum + idx + 1;
 
               return (
                 <tr
