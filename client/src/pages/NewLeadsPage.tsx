@@ -15,7 +15,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { categoryService } from '../services/categoryService';
 import { cityService } from '../services/cityService';
-import { Sparkles, Search, Upload, History } from 'lucide-react';
+import { Sparkles, Search, Upload, History, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export const NewLeadsPage: React.FC = () => {
@@ -27,6 +27,9 @@ export const NewLeadsPage: React.FC = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [callers, setCallers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalLeads, setTotalLeads] = useState(0);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -70,12 +73,18 @@ export const NewLeadsPage: React.FC = () => {
           status: statusFilter !== 'All' ? statusFilter : undefined,
           callerId: selectedCallerId || undefined,
           categoryId: categoryIdFilter !== 'All' ? categoryIdFilter : undefined,
-          cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined
+          cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined,
+          page,
+          limit: 50
         }),
         user?.role === 'admin' ? userService.getUsers() : Promise.resolve({ success: true, users: [] })
       ]);
 
-      if (leadsRes.success) setLeads(leadsRes.leads);
+      if (leadsRes.success) {
+        setLeads(leadsRes.leads);
+        setTotalPages(leadsRes.pagination.pages);
+        setTotalLeads(leadsRes.pagination.total);
+      }
       if (callersRes.success && callersRes.users) {
         setCallers(callersRes.users.filter((u) => u.role === 'caller'));
       }
@@ -88,7 +97,7 @@ export const NewLeadsPage: React.FC = () => {
 
   useEffect(() => {
     fetchNewLeads();
-  }, [search, statusFilter, selectedCallerId, categoryIdFilter, selectedCityIds]);
+  }, [search, statusFilter, selectedCallerId, categoryIdFilter, selectedCityIds, page]);
 
   // Realtime Socket
   useEffect(() => {
@@ -205,7 +214,7 @@ export const NewLeadsPage: React.FC = () => {
             </span>
           </div>
           <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight mt-2">
-            New Leads Queue ({leads.length})
+            New Leads Queue ({totalLeads})
           </h2>
           <p className="text-amber-200/90 text-xs md:text-sm mt-1 max-w-xl">
             Imported leads waiting for first contact. Updating or adding a note to any lead automatically moves it to your active Leads pipeline.
@@ -240,7 +249,7 @@ export const NewLeadsPage: React.FC = () => {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search new lead name, company, phone or email..."
             className="w-full bg-transparent text-xs text-slate-900 dark:text-white focus:outline-none"
           />
@@ -249,14 +258,14 @@ export const NewLeadsPage: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <CityFilterDropdown
             selectedCityIds={selectedCityIds}
-            setSelectedCityIds={setSelectedCityIds}
+            setSelectedCityIds={(ids) => { setSelectedCityIds(ids); setPage(1); }}
             cities={cities}
           />
 
           {isAdmin && (
             <select
               value={selectedCallerId}
-              onChange={(e) => setSelectedCallerId(e.target.value)}
+              onChange={(e) => { setSelectedCallerId(e.target.value); setPage(1); }}
               className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
             >
               <option value="">All Callers</option>
@@ -270,7 +279,7 @@ export const NewLeadsPage: React.FC = () => {
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
           >
             <option value="All">All Statuses</option>
@@ -283,7 +292,7 @@ export const NewLeadsPage: React.FC = () => {
           {categories.length > 0 && (
             <select
               value={categoryIdFilter}
-              onChange={(e) => setCategoryIdFilter(e.target.value)}
+              onChange={(e) => { setCategoryIdFilter(e.target.value); setPage(1); }}
               className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-800 dark:text-slate-200"
             >
               <option value="All">All Categories</option>
@@ -315,6 +324,31 @@ export const NewLeadsPage: React.FC = () => {
         onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
         showCallerColumn={isAdmin}
       />
+
+      {/* Pagination Footer */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+          <p className="text-xs text-slate-500">
+            Page <strong className="text-slate-900 dark:text-white font-bold">{page}</strong> of {totalPages}
+          </p>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+              className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+              className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Edit Lead Modal */}
       {editingLead && (
