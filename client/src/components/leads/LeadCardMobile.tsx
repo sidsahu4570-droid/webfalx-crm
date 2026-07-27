@@ -228,13 +228,6 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
           <Edit2 className="w-3.5 h-3.5" />
           <span>Edit</span>
         </button>
-        <button
-          onClick={onDelete}
-          className="flex-1 min-w-[75px] py-2 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-650 dark:text-rose-400 font-bold rounded-xl flex items-center justify-center space-x-1 border border-rose-200 dark:border-rose-900/30 transition-all text-[11px]"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Delete</span>
-        </button>
       </div>
     </div>
   );
