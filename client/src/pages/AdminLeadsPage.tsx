@@ -82,12 +82,15 @@ export const AdminLeadsPage: React.FC = () => {
         page
       };
       const res = await leadService.getLeads(params);
+      console.log('AdminLeadsPage fetch params:', params);
+      console.log('AdminLeadsPage fetch response:', res);
       if (res.success && res.leads) {
         setLeads(res.leads);
         setTotalPages(res.pagination?.pages || 1);
         setTotalLeads(res.pagination?.total || 0);
       }
     } catch (err: any) {
+      console.error('AdminLeadsPage fetch error:', err);
       toast('Error Loading Leads', err.message, 'error');
     } finally {
       setLoading(false);
