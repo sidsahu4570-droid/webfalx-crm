@@ -54,9 +54,7 @@ export const AdminDashboard: React.FC = () => {
   const [createUserOpen, setCreateUserOpen] = useState(false);
   const [creatingUser, setCreatingUser] = useState(false);
 
-  // Clear Demo Data state
-  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
-  const [clearing, setClearing] = useState(false);
+
 
   const fetchAdminData = async () => {
     try {
@@ -125,21 +123,7 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  const handleClearDemoData = async () => {
-    setClearing(true);
-    try {
-      const res = await adminService.clearDemoData();
-      if (res.success) {
-        toast('Demo Data Purged', 'All sample leads and demo callers have been deleted', 'success');
-        setClearConfirmOpen(false);
-        fetchAdminData();
-      }
-    } catch (err: any) {
-      toast('Purge Failed', err.message, 'error');
-    } finally {
-      setClearing(false);
-    }
-  };
+
 
   if (loading) {
     return <LoadingSpinner text="Loading Admin Command Center..." />;
@@ -172,13 +156,6 @@ export const AdminDashboard: React.FC = () => {
             <span>Create Caller Account</span>
           </button>
 
-          <button
-            onClick={() => setClearConfirmOpen(true)}
-            className="flex items-center space-x-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 text-xs font-bold px-3 py-2.5 rounded-2xl transition-all shrink-0"
-          >
-            <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-            <span>Clear Demo Data</span>
-          </button>
         </div>
       </div>
 
@@ -241,15 +218,7 @@ export const AdminDashboard: React.FC = () => {
         loading={creatingUser}
       />
 
-      {/* Confirm Clear Demo Data Modal */}
-      <ConfirmDialog
-        isOpen={clearConfirmOpen}
-        onClose={() => setClearConfirmOpen(false)}
-        onConfirm={handleClearDemoData}
-        title="Purge All Demo Data?"
-        message="Are you sure you want to permanently delete all sample demo leads, sample caller profiles, and activity logs? Real caller profiles and active data will not be affected."
-        confirmText="Yes, Clear Demo Data"
-      />
+
     </div>
   );
 };
