@@ -14,7 +14,7 @@ import { LoadingSpinner } from '../components/common/SkeletonLoader';
 import { useToast } from '../context/ToastContext';
 import { categoryService } from '../services/categoryService';
 import { cityService } from '../services/cityService';
-import { Layers } from 'lucide-react';
+import { Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const AdminLeadsPage: React.FC = () => {
   const { toast } = useToast();
@@ -34,6 +34,11 @@ export const AdminLeadsPage: React.FC = () => {
   const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
   const [cities, setCities] = useState<City[]>([]);
   const [sortBy, setSortBy] = useState('recentlyUpdated');
+
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalLeads, setTotalLeads] = useState(0);
 
   // Convert Lead -> Converted Client flow
   const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
@@ -73,16 +78,26 @@ export const AdminLeadsPage: React.FC = () => {
         limit: 50,
         categoryId: categoryId !== 'All' ? categoryId : undefined,
         cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined,
-        sortBy
+        sortBy,
+        page
       };
       const res = await leadService.getLeads(params);
-      if (res.success && res.leads) setLeads(res.leads);
+      if (res.success && res.leads) {
+        setLeads(res.leads);
+        setTotalPages(res.pagination?.pages || 1);
+        setTotalLeads(res.pagination?.total || 0);
+      }
     } catch (err: any) {
       toast('Error Loading Leads', err.message, 'error');
     } finally {
       setLoading(false);
     }
-  }, [search, status, priority, dueOnly, callerId, toast, categoryId, selectedCityIds, sortBy]);
+  }, [search, status, priority, dueOnly, callerId, toast, categoryId, selectedCityIds, sortBy, page]);
+
+  // Reset to page 1 when any filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, priority, dueOnly, callerId, categoryId, selectedCityIds, sortBy]);
 
   useEffect(() => {
     fetchCallers();
@@ -179,7 +194,7 @@ export const AdminLeadsPage: React.FC = () => {
             Cross-Caller Lead Oversight & Reassignment
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Admin view of all call team prospects ({leads.length} prospects shown)
+            Admin view of all call team prospects ({totalLeads.toLocaleString()} Prospects shown)
           </p>
         </div>
       </div>
@@ -240,28 +255,54 @@ export const AdminLeadsPage: React.FC = () => {
       {loading ? (
         <LoadingSpinner text="Fetching full team prospects pipeline..." />
       ) : (
-        <LeadTable
-          leads={leads}
-          onSelectLead={(l) => setSelectedLead(l)}
-          onEditLead={(l) => setSelectedLead(l)}
-          onDeleteLead={() => {}}
-          onDeleteMultipleLeads={async (ids) => {
-            try {
-              const res = await leadService.deleteMultipleLeads(ids);
-              if (res.success) {
-                toast('Leads Deleted', `Successfully moved ${ids.length} leads to Trash History`, 'success');
-                fetchAllLeads();
+        <div className="space-y-4">
+          <LeadTable
+            leads={leads}
+            onSelectLead={(l) => setSelectedLead(l)}
+            onEditLead={(l) => setSelectedLead(l)}
+            onDeleteLead={() => {}}
+            onDeleteMultipleLeads={async (ids) => {
+              try {
+                const res = await leadService.deleteMultipleLeads(ids);
+                if (res.success) {
+                  toast('Leads Deleted', `Successfully moved ${ids.length} leads to Trash History`, 'success');
+                  fetchAllLeads();
+                }
+              } catch (err: any) {
+                toast('Deletion Error', err.message, 'error');
               }
-            } catch (err: any) {
-              toast('Deletion Error', err.message, 'error');
-            }
-          }}
-          onQuickNote={(l) => setSelectedLead(l)}
-          onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
-          showCallerColumn={true}
-          currentPage={1}
-          pageSize={50}
-        />
+            }}
+            onQuickNote={(l) => setSelectedLead(l)}
+            onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
+            showCallerColumn={true}
+            currentPage={page}
+            pageSize={50}
+          />
+          {/* Pagination Footer */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+              <p className="text-xs text-slate-500">
+                Page <strong className="text-slate-900 dark:text-white font-bold">{page}</strong> of {totalPages}
+              </p>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-650 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-650 dark:text-slate-300 disabled:opacity-40 hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       <LeadDetailModal
