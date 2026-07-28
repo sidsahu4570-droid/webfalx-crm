@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DirectCallButton } from '../common/DirectCallButton';
 import { Lead } from '../../types';
 import { FormulaEngine } from '../../utils/formulaEngine';
@@ -58,8 +58,13 @@ export const LeadTable: React.FC<LeadTableProps> = ({
 }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [whatsappLead, setWhatsappLead] = useState<Lead | null>(null);
-  const [sortField, setSortField] = useState<keyof Lead | 'name' | 'serialNumber'>('serialNumber');
+  const [sortField, setSortField] = useState<keyof Lead | 'name' | 'serialNumber' | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Reset local sort when backend leads reference changes
+  useEffect(() => {
+    setSortField(null);
+  }, [leads]);
 
   const handleSelectAll = () => {
     if (selectedIds.length === leads.length) {
@@ -87,19 +92,21 @@ export const LeadTable: React.FC<LeadTableProps> = ({
     }
   };
 
-  // Sorted Leads
-  const sortedLeads = [...leads].sort((a, b) => {
-    if (sortField === 'serialNumber') {
-      const numA = a.serialNumber || 0;
-      const numB = b.serialNumber || 0;
-      return sortOrder === 'asc' ? numA - numB : numB - numA;
-    }
-    const valA = (a[sortField] || '').toString().toLowerCase();
-    const valB = (b[sortField] || '').toString().toLowerCase();
-    if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
-    if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
-    return 0;
-  });
+  // Sorted Leads: fallback to prop order if sortField is null
+  const sortedLeads = sortField
+    ? [...leads].sort((a, b) => {
+        if (sortField === 'serialNumber') {
+          const numA = a.serialNumber || 0;
+          const numB = b.serialNumber || 0;
+          return sortOrder === 'asc' ? numA - numB : numB - numA;
+        }
+        const valA = (a[sortField] || '').toString().toLowerCase();
+        const valB = (b[sortField] || '').toString().toLowerCase();
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      })
+    : leads;
 
   const handleBulkExport = () => {
     const selectedLeads = leads.filter((l) => selectedIds.includes(l._id));
