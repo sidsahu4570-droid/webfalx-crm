@@ -103,6 +103,7 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
       totalCalls: acc.totalCalls + (r.totalCalls || 0),
       connectedCalls: acc.connectedCalls + (r.connectedCalls || 0),
       notPickedCalls: acc.notPickedCalls + (r.notPickedCalls || 0),
+      notInterestedLeads: acc.notInterestedLeads + (r.notInterestedLeads || 0),
       whatsAppSent: acc.whatsAppSent + (r.whatsAppSent || 0),
       followUp: acc.followUp + (r.followUp || 0),
       meetingsScheduled: acc.meetingsScheduled + (r.meetingsScheduled || 0),
@@ -112,6 +113,7 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
       totalCalls: 0,
       connectedCalls: 0,
       notPickedCalls: 0,
+      notInterestedLeads: 0,
       whatsAppSent: 0,
       followUp: 0,
       meetingsScheduled: 0,
@@ -127,6 +129,7 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
       'Total Calls',
       'Connected Calls',
       'Not Picked Calls',
+      'Not Interested',
       'WhatsApp Sent',
       'Follow-ups',
       'Meetings',
@@ -138,6 +141,7 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
       r.totalCalls,
       r.connectedCalls,
       r.notPickedCalls,
+      r.notInterestedLeads || 0,
       r.whatsAppSent,
       r.followUp,
       r.meetingsScheduled,
@@ -251,8 +255,8 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
         )}
       </div>
 
-      {/* 📊 7 KPI Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+      {/* 📊 8 KPI Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-bold uppercase tracking-wider">Total Calls</span>
@@ -275,6 +279,14 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
             <PhoneOff className="w-4 h-4 text-orange-500" />
           </div>
           <div className="text-xl font-extrabold text-orange-600 dark:text-orange-400">{totals.notPickedCalls}</div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center justify-between text-slate-400 mb-1">
+            <span className="text-[10px] font-bold uppercase tracking-wider">Not Interested</span>
+            <PhoneOff className="w-4 h-4 text-rose-500" />
+          </div>
+          <div className="text-xl font-extrabold text-rose-600 dark:text-rose-400">{totals.notInterestedLeads}</div>
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -334,6 +346,7 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
                   <th className="py-3.5 px-4">Total Calls</th>
                   <th className="py-3.5 px-4">Connected</th>
                   <th className="py-3.5 px-4">Not Picked</th>
+                  <th className="py-3.5 px-4">Not Interested</th>
                   <th className="py-3.5 px-4">WhatsApp Sent</th>
                   <th className="py-3.5 px-4">Follow-ups</th>
                   <th className="py-3.5 px-4">Meetings</th>
@@ -350,6 +363,7 @@ export const SeparatedReportDashboard: React.FC<SeparatedReportDashboardProps> =
                     <td className="py-4 px-4 font-extrabold text-slate-800 dark:text-slate-200">{r.totalCalls}</td>
                     <td className="py-4 px-4 font-extrabold text-emerald-600 dark:text-emerald-400">{r.connectedCalls}</td>
                     <td className="py-4 px-4 font-extrabold text-orange-600 dark:text-orange-400">{r.notPickedCalls}</td>
+                    <td className="py-4 px-4 font-extrabold text-rose-600 dark:text-rose-400">{r.notInterestedLeads || 0}</td>
                     <td className="py-4 px-4 font-extrabold text-emerald-600 dark:text-emerald-400">{r.whatsAppSent}</td>
                     <td className="py-4 px-4 font-extrabold text-blue-600 dark:text-blue-400">{r.followUp}</td>
                     <td className="py-4 px-4 font-extrabold text-purple-600 dark:text-purple-400">{r.meetingsScheduled}</td>
