@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User } from '../types';
+import { User, Role } from '../types';
 import { authService } from '../services/authService';
+
+export interface SavedAccount {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  token: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -11,6 +19,10 @@ interface AuthContextType {
   googleLogin: (email: string, name: string, googleId?: string) => Promise<User>;
   logout: () => void;
   updateCurrentUser: (user: User) => void;
+  accounts: SavedAccount[];
+  switchAccount: (email: string) => void;
+  logoutCurrent: () => void;
+  logoutAll: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,7 +45,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  const [accounts, setAccounts] = useState<SavedAccount[]>(() => {
+    try {
+      const saved = localStorage.getItem('crm_accounts');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   const [loading, setLoading] = useState<boolean>(true);
+
+  const saveAccountInfo = (user: User, token: string) => {
+    const newAccount: SavedAccount = {
+      id: user._id || user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      token
+    };
+    setAccounts((prev) => {
+      const updated = [...prev];
+      const idx = updated.findIndex((acc) => acc.email === user.email);
+      if (idx > -1) {
+        updated[idx] = newAccount;
+      } else {
+        updated.push(newAccount);
+      }
+      localStorage.setItem('crm_accounts', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -46,10 +88,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (isMounted && data.success && data.user) {
             setUser(data.user);
             localStorage.setItem('crm_user', JSON.stringify(data.user));
+            saveAccountInfo(data.user, storedToken);
           }
         } catch (error: any) {
           console.warn('[Auth Notice] Session refresh check failed:', error?.message || error);
-          // Only clear session if server explicitly returns 401 Unauthorized or 403 Forbidden
           if (error?.response && (error.response.status === 401 || error.response.status === 403)) {
             if (isMounted) {
               setUser(null);
@@ -58,7 +100,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               localStorage.removeItem('crm_user');
             }
           }
-          // On transient network error or server restart, retain stored user session from localStorage!
         }
       }
       if (isMounted) {
@@ -80,6 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(res.user);
       localStorage.setItem('crm_token', res.token);
       localStorage.setItem('crm_user', JSON.stringify(res.user));
+      saveAccountInfo(res.user, res.token);
       return res.user;
     } else {
       throw new Error(res.message || 'Login failed');
@@ -93,17 +135,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(res.user);
       localStorage.setItem('crm_token', res.token);
       localStorage.setItem('crm_user', JSON.stringify(res.user));
+      saveAccountInfo(res.user, res.token);
       return res.user;
     } else {
       throw new Error(res.message || 'Google Login failed');
     }
   };
 
-  const logout = () => {
+  const logoutCurrent = () => {
+    if (!user) return;
+    const remaining = accounts.filter((acc) => acc.email !== user.email);
+    localStorage.setItem('crm_accounts', JSON.stringify(remaining));
+    setAccounts(remaining);
+
+    if (remaining.length > 0) {
+      const next = remaining[0];
+      setToken(next.token);
+      const nextUser: User = {
+        id: next.id,
+        _id: next.id,
+        name: next.name,
+        email: next.email,
+        role: next.role,
+        isActive: true
+      };
+      setUser(nextUser);
+      localStorage.setItem('crm_token', next.token);
+      localStorage.setItem('crm_user', JSON.stringify(nextUser));
+    } else {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('crm_token');
+      localStorage.removeItem('crm_user');
+      localStorage.removeItem('crm_accounts');
+    }
+  };
+
+  const logoutAll = () => {
     setUser(null);
     setToken(null);
+    setAccounts([]);
     localStorage.removeItem('crm_token');
     localStorage.removeItem('crm_user');
+    localStorage.removeItem('crm_accounts');
+  };
+
+  const switchAccount = (email: string) => {
+    const target = accounts.find((acc) => acc.email === email);
+    if (target) {
+      setToken(target.token);
+      const updatedUser: User = {
+        id: target.id,
+        _id: target.id,
+        name: target.name,
+        email: target.email,
+        role: target.role,
+        isActive: true
+      };
+      setUser(updatedUser);
+      localStorage.setItem('crm_token', target.token);
+      localStorage.setItem('crm_user', JSON.stringify(updatedUser));
+    }
+  };
+
+  const logout = () => {
+    logoutCurrent();
   };
 
   const updateCurrentUser = (updatedUser: User) => {
@@ -121,7 +217,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         googleLogin,
         logout,
-        updateCurrentUser
+        updateCurrentUser,
+        accounts,
+        switchAccount,
+        logoutCurrent,
+        logoutAll
       }}
     >
       {children}

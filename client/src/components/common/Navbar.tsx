@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSocket } from '../../context/SocketContext';
+import { useToast } from '../../context/ToastContext';
 import { GlobalSmartSearch } from './GlobalSmartSearch';
 import { Lead } from '../../types';
 import {
@@ -31,7 +33,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   toggleSidebar,
   isSidebarOpen
 }) => {
-  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { user, accounts, switchAccount, logoutCurrent, logoutAll } = useAuth();
+  const { toast } = useToast();
   const { theme, toggleTheme } = useTheme();
   const { isConnected } = useSocket();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -117,19 +121,106 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 py-1 font-sans">
-                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
-                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+              <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-2xl shadow-xl z-50 py-2 font-sans text-slate-100">
+                {/* Header: Current Account */}
+                <div className="px-4 py-2 border-b border-slate-800">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Current Account</p>
+                  <p className="text-xs font-bold text-white truncate mt-1">{user.name}</p>
+                  <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
                 </div>
 
-                <button
-                  onClick={logout}
-                  className="w-full text-left px-4 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center space-x-2 transition-colors"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Log Out</span>
-                </button>
+                {/* Switch Account List */}
+                <div className="px-4 py-2 border-b border-slate-800">
+                  <p className="text-[10px] uppercase font-bold tracking-wider text-slate-500 mb-2">Switch Account</p>
+                  <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+                    {accounts.map((acc) => {
+                      const isActive = acc.email === user.email;
+                      return (
+                        <button
+                          key={acc.email}
+                          onClick={() => {
+                            if (!isActive) {
+                              switchAccount(acc.email);
+                              setDropdownOpen(false);
+                              toast('Account Switched', `Logged in as ${acc.name}`, 'success');
+                              if (acc.role === 'admin') {
+                                navigate('/admin');
+                              } else {
+                                navigate('/dashboard');
+                              }
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition-colors ${
+                            isActive
+                              ? 'bg-indigo-600/20 border border-indigo-500/30 text-white cursor-default'
+                              : 'hover:bg-slate-800 text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2 truncate">
+                            <div className="w-6 h-6 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-[10px] text-white">
+                              {acc.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="truncate">
+                              <p className="text-xs font-bold leading-tight">{acc.name}</p>
+                              <p className="text-[9px] text-slate-400 leading-tight">{acc.email}</p>
+                            </div>
+                          </div>
+                          {isActive && (
+                            <span className="text-emerald-500 font-bold text-xs">✓</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add Another Account */}
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      navigate('/login');
+                    }}
+                    className="w-full mt-3 p-2 rounded-xl border border-dashed border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-indigo-400 text-xs font-semibold flex items-center justify-center space-x-1.5 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Another Account</span>
+                  </button>
+                </div>
+
+                {/* Logouts */}
+                <div className="px-2 pt-2">
+                  <button
+                    onClick={() => {
+                      logoutCurrent();
+                      setDropdownOpen(false);
+                      const remaining = accounts.filter((acc) => acc.email !== user.email);
+                      if (remaining.length === 0) {
+                        navigate('/login');
+                      } else {
+                        const next = remaining[0];
+                        if (next.role === 'admin') {
+                          navigate('/admin');
+                        } else {
+                          navigate('/dashboard');
+                        }
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-bold text-rose-400 hover:bg-rose-500/10 rounded-xl flex items-center space-x-2 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log Out Current Account</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      logoutAll();
+                      setDropdownOpen(false);
+                      navigate('/login');
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-bold text-rose-500 hover:bg-rose-600/15 rounded-xl flex items-center space-x-2 transition-colors"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Log Out All Accounts</span>
+                  </button>
+                </div>
               </div>
             )}
           </div>
