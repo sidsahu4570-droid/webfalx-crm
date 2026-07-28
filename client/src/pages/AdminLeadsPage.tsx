@@ -33,6 +33,7 @@ export const AdminLeadsPage: React.FC = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCityIds, setSelectedCityIds] = useState<string[]>([]);
   const [cities, setCities] = useState<City[]>([]);
+  const [sortBy, setSortBy] = useState('recentlyUpdated');
 
   // Convert Lead -> Converted Client flow
   const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
@@ -71,7 +72,8 @@ export const AdminLeadsPage: React.FC = () => {
         callerId: callerId ? callerId : undefined,
         limit: 50,
         categoryId: categoryId !== 'All' ? categoryId : undefined,
-        cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined
+        cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined,
+        sortBy
       };
       const res = await leadService.getLeads(params);
       if (res.success && res.leads) setLeads(res.leads);
@@ -80,7 +82,7 @@ export const AdminLeadsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, status, priority, dueOnly, callerId, toast, categoryId, selectedCityIds]);
+  }, [search, status, priority, dueOnly, callerId, toast, categoryId, selectedCityIds, sortBy]);
 
   useEffect(() => {
     fetchCallers();
@@ -211,8 +213,27 @@ export const AdminLeadsPage: React.FC = () => {
               setCategoryId('All');
               setSelectedCityIds([]);
               setSearch('');
+              setSortBy('recentlyUpdated');
             }}
           />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          >
+            <option value="recentlyUpdated">Recently Updated</option>
+            <option value="oldestUpdated">Oldest Updated</option>
+            <option value="recentlyCreated">Recently Created</option>
+            <option value="oldestCreated">Oldest Created</option>
+            <option value="latestFollowUp">Latest Follow-up</option>
+            <option value="oldestFollowUp">Oldest Follow-up</option>
+            <option value="companyAsc">Company Name (A–Z)</option>
+            <option value="companyDesc">Company Name (Z–A)</option>
+            <option value="callerAsc">Caller Name (A–Z)</option>
+            <option value="callerDesc">Caller Name (Z–A)</option>
+            <option value="priorityHighToLow">Priority (High → Low)</option>
+            <option value="priorityLowToHigh">Priority (Low → High)</option>
+          </select>
         </div>
       </div>
 

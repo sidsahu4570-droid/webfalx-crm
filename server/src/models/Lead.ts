@@ -194,5 +194,9 @@ leadSchema.index({ userId: 1, status: 1 });
 leadSchema.index({ userId: 1, nextFollowUpDate: 1 });
 leadSchema.index({ serialNumber: 1 });
 leadSchema.index({ name: 'text', company: 'text', email: 'text', phone: 'text' });
+leadSchema.index({ updatedAt: -1 });
+leadSchema.index({ createdAt: -1 });
+leadSchema.index({ company: 1 });
+leadSchema.index({ callerName: 1 });
 
 export const Lead = model<ILead>('Lead', leadSchema);

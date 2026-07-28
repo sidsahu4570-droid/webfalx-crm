@@ -118,21 +118,103 @@ export const getLeads = async (req: Request, res: Response) => {
 
     // Sorting
     let sortOptions: any = { updatedAt: -1 };
-    if (sortBy === 'serialNumber') sortOptions = { serialNumber: order === 'asc' ? 1 : -1 };
-    else if (sortBy === 'nextFollowUp') sortOptions = { nextFollowUpDate: order === 'asc' ? 1 : -1 };
-    else if (sortBy === 'lastContact') sortOptions = { lastContactDate: order === 'asc' ? 1 : -1 };
-    else if (sortBy === 'newest') sortOptions = { createdAt: -1 };
-    else if (sortBy === 'name') sortOptions = { name: order === 'desc' ? -1 : 1 };
+    if (sortBy === 'serialNumber') {
+      sortOptions = { serialNumber: order === 'asc' ? 1 : -1 };
+    } else if (sortBy === 'nextFollowUp') {
+      sortOptions = { nextFollowUpDate: order === 'asc' ? 1 : -1 };
+    } else if (sortBy === 'lastContact') {
+      sortOptions = { lastContactDate: order === 'asc' ? 1 : -1 };
+    } else if (sortBy === 'newest') {
+      sortOptions = { createdAt: -1 };
+    } else if (sortBy === 'name') {
+      sortOptions = { name: order === 'desc' ? -1 : 1 };
+    }
+    // New Sorting Options
+    else if (sortBy === 'recentlyUpdated') {
+      sortOptions = { updatedAt: -1 };
+    } else if (sortBy === 'oldestUpdated') {
+      sortOptions = { updatedAt: 1 };
+    } else if (sortBy === 'recentlyCreated') {
+      sortOptions = { createdAt: -1 };
+    } else if (sortBy === 'oldestCreated') {
+      sortOptions = { createdAt: 1 };
+    } else if (sortBy === 'companyAsc') {
+      sortOptions = { company: 1 };
+    } else if (sortBy === 'companyDesc') {
+      sortOptions = { company: -1 };
+    } else if (sortBy === 'callerAsc') {
+      sortOptions = { callerName: 1 };
+    } else if (sortBy === 'callerDesc') {
+      sortOptions = { callerName: -1 };
+    }
 
     const pageNum = parseInt(page as string, 10) || 1;
     const limitNum = parseInt(limit as string, 10) || 50;
     const skip = (pageNum - 1) * limitNum;
 
     const totalLeads = await Lead.countDocuments(query);
-    const leads = await Lead.find(query)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limitNum);
+    let leads;
+
+    if (sortBy === 'priorityHighToLow' || sortBy === 'priorityLowToHigh') {
+      const priorityOrder = sortBy === 'priorityHighToLow' ? -1 : 1;
+      leads = await Lead.aggregate([
+        { $match: query },
+        {
+          $addFields: {
+            priorityWeight: {
+              $switch: {
+                branches: [
+                  { case: { $eq: ['$priority', 'High'] }, then: 3 },
+                  { case: { $eq: ['$priority', 'Medium'] }, then: 2 },
+                  { case: { $eq: ['$priority', 'Low'] }, then: 1 }
+                ],
+                default: 0
+              }
+            }
+          }
+        },
+        { $sort: { priorityWeight: priorityOrder, updatedAt: -1 } },
+        { $skip: skip },
+        { $limit: limitNum }
+      ]);
+    } else if (sortBy === 'latestFollowUp' || sortBy === 'oldestFollowUp') {
+      const now = new Date();
+      leads = await Lead.aggregate([
+        { $match: query },
+        {
+          $addFields: {
+            followUpWeight: {
+              $cond: {
+                if: {
+                  $and: [
+                    { $ne: [{ $ifNull: ['$nextFollowUpDate', null] }, null] },
+                    sortBy === 'latestFollowUp'
+                      ? { $gte: ['$nextFollowUpDate', now] }
+                      : { $lt: ['$nextFollowUpDate', now] }
+                  ]
+                },
+                then: 1,
+                else: {
+                  $cond: {
+                    if: { $ne: [{ $ifNull: ['$nextFollowUpDate', null] }, null] },
+                    then: 2,
+                    else: 3
+                  }
+                }
+              }
+            }
+          }
+        },
+        { $sort: { followUpWeight: 1, nextFollowUpDate: 1, updatedAt: -1 } },
+        { $skip: skip },
+        { $limit: limitNum }
+      ]);
+    } else {
+      leads = await Lead.find(query)
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limitNum);
+    }
 
     res.json({
       success: true,
