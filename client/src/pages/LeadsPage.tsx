@@ -18,6 +18,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonRow } from '../components/common/SkeletonLoader';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { cityService } from '../services/cityService';
 import { exportLeadsToCSV } from '../utils/csv';
 import {
@@ -34,6 +35,7 @@ import {
 export const LeadsPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { socket } = useSocket();
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +126,37 @@ export const LeadsPage: React.FC = () => {
     fetchLeads();
   }, [fetchLeads]);
 
+  // Real-time Socket synchronization
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdate = (updatedLead: any) => {
+      if (!updatedLead) return;
+      
+      // Update local leads array if the lead is in the list
+      setLeads((prev) => prev.map((l) => (l._id === updatedLead._id ? updatedLead : l)));
+
+      // If the updated lead is the one currently in detail modal, update it!
+      if (detailLead && detailLead._id === updatedLead._id) {
+        setDetailLead(updatedLead);
+      }
+    };
+
+    const handleCreated = () => {
+      fetchLeads();
+    };
+
+    socket.on('lead_created', handleCreated);
+    socket.on('lead_updated', handleUpdate);
+    socket.on('leads_imported', handleCreated);
+
+    return () => {
+      socket.off('lead_created', handleCreated);
+      socket.off('lead_updated', handleUpdate);
+      socket.off('leads_imported', handleCreated);
+    };
+  }, [socket, detailLead, fetchLeads]);
+
   useEffect(() => {
     if (user?.role === 'admin') {
       userService.getUsers().then((res) => {
@@ -139,6 +172,8 @@ export const LeadsPage: React.FC = () => {
         const res = await leadService.updateLead(editingLead._id, formData);
         if (res.success) {
           toast('Prospect Updated', `Successfully saved changes for ${res.lead.name}`, 'success');
+          setLeads((prev) => prev.map((l) => (l._id === res.lead._id ? res.lead : l)));
+          if (detailLead?._id === res.lead._id) setDetailLead(res.lead);
           fetchLeads();
         }
       } else {
@@ -163,6 +198,8 @@ export const LeadsPage: React.FC = () => {
       const res = await leadService.deleteLead(leadToDelete._id);
       if (res.success) {
         toast('Prospect Deleted', `Removed ${leadToDelete.name} from database`, 'success');
+        setLeads((prev) => prev.filter((l) => l._id !== leadToDelete._id));
+        if (detailLead?._id === leadToDelete._id) setDetailLead(null);
         setDeleteConfirmOpen(false);
         setLeadToDelete(null);
         fetchLeads();
@@ -183,8 +220,9 @@ export const LeadsPage: React.FC = () => {
       const res = await leadService.addNote(leadId, content, options);
       if (res.success) {
         toast('Conversation Update Logged', 'Saved conversation details to prospect timeline', 'success');
-        fetchLeads();
+        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
         if (detailLead?._id === leadId) setDetailLead(res.lead);
+        fetchLeads();
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -196,8 +234,9 @@ export const LeadsPage: React.FC = () => {
       const res = await leadService.updateLead(leadId, { status: newStatus });
       if (res.success) {
         toast('Status Changed', `Lead status updated to ${newStatus}`, 'success');
-        fetchLeads();
+        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
         if (detailLead?._id === leadId) setDetailLead(res.lead);
+        fetchLeads();
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -209,8 +248,9 @@ export const LeadsPage: React.FC = () => {
       const res = await leadService.completeFollowUp(leadId, nextDate);
       if (res.success) {
         toast('Follow-up Complete', 'Marked follow-up as completed', 'success');
-        fetchLeads();
+        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
         if (detailLead?._id === leadId) setDetailLead(res.lead);
+        fetchLeads();
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');

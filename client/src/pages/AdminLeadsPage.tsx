@@ -12,12 +12,14 @@ import { FilterDropdown } from '../components/leads/FilterDropdown';
 import { CityFilterDropdown } from '../components/leads/CityFilterDropdown';
 import { LoadingSpinner } from '../components/common/SkeletonLoader';
 import { useToast } from '../context/ToastContext';
+import { useSocket } from '../context/SocketContext';
 import { categoryService } from '../services/categoryService';
 import { cityService } from '../services/cityService';
 import { Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const AdminLeadsPage: React.FC = () => {
   const { toast } = useToast();
+  const { socket } = useSocket();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [callers, setCallers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,13 +109,45 @@ export const AdminLeadsPage: React.FC = () => {
     fetchAllLeads();
   }, [fetchAllLeads]);
 
+  // Real-time Socket synchronization
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleUpdate = (updatedLead: any) => {
+      if (!updatedLead) return;
+
+      // Update local leads array if the lead is in the list
+      setLeads((prev) => prev.map((l) => (l._id === updatedLead._id ? updatedLead : l)));
+
+      // If the updated lead is the one currently in detail modal, update it!
+      if (selectedLead && selectedLead._id === updatedLead._id) {
+        setSelectedLead(updatedLead);
+      }
+    };
+
+    const handleCreated = () => {
+      fetchAllLeads();
+    };
+
+    socket.on('lead_created', handleCreated);
+    socket.on('lead_updated', handleUpdate);
+    socket.on('leads_imported', handleCreated);
+
+    return () => {
+      socket.off('lead_created', handleCreated);
+      socket.off('lead_updated', handleUpdate);
+      socket.off('leads_imported', handleCreated);
+    };
+  }, [socket, selectedLead, fetchAllLeads]);
+
   const handleAssignLead = async (leadId: string, targetCallerId: string) => {
     try {
       const res = await adminService.assignLead(leadId, targetCallerId);
       if (res.success) {
         toast('Lead Reassigned', res.message, 'success');
-        fetchAllLeads();
+        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
         if (selectedLead?._id === leadId) setSelectedLead(res.lead);
+        fetchAllLeads();
       }
     } catch (err: any) {
       toast('Reassign Failed', err.message, 'error');
@@ -129,8 +163,9 @@ export const AdminLeadsPage: React.FC = () => {
       const res = await leadService.addNote(leadId, content, options);
       if (res.success) {
         toast('Conversation Update Saved', 'Note logged to prospect', 'success');
-        fetchAllLeads();
+        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
         if (selectedLead?._id === leadId) setSelectedLead(res.lead);
+        fetchAllLeads();
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -142,8 +177,9 @@ export const AdminLeadsPage: React.FC = () => {
       const res = await leadService.updateLead(leadId, { status: newStatus });
       if (res.success) {
         toast('Status Changed', `Lead status changed to ${newStatus}`, 'success');
-        fetchAllLeads();
+        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
         if (selectedLead?._id === leadId) setSelectedLead(res.lead);
+        fetchAllLeads();
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -155,8 +191,9 @@ export const AdminLeadsPage: React.FC = () => {
       const res = await leadService.completeFollowUp(leadId, nextDate);
       if (res.success) {
         toast('Follow-up Completed', 'Marked follow-up as done', 'success');
-        fetchAllLeads();
+        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
         if (selectedLead?._id === leadId) setSelectedLead(res.lead);
+        fetchAllLeads();
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');

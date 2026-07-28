@@ -102,7 +102,12 @@ export const NewLeadsPage: React.FC = () => {
   // Realtime Socket
   useEffect(() => {
     if (!socket) return;
-    const handleUpdate = () => fetchNewLeads();
+    const handleUpdate = (updatedLead?: any) => {
+      fetchNewLeads();
+      if (updatedLead && detailLead && detailLead._id === updatedLead._id) {
+        setDetailLead(updatedLead);
+      }
+    };
 
     socket.on('lead_created', handleUpdate);
     socket.on('lead_updated', handleUpdate);
@@ -113,7 +118,7 @@ export const NewLeadsPage: React.FC = () => {
       socket.off('lead_updated', handleUpdate);
       socket.off('leads_imported', handleUpdate);
     };
-  }, [socket]);
+  }, [socket, detailLead]);
 
   const handleLeadUpdateSubmit = async (data: any) => {
     if (!editingLead) return;
@@ -121,6 +126,8 @@ export const NewLeadsPage: React.FC = () => {
       const res = await leadService.updateLead(editingLead._id, data);
       if (res.success) {
         toast('Lead Updated', 'Lead updated and moved to active Leads', 'success');
+        setLeads((prev) => prev.filter((l) => l._id !== editingLead._id));
+        if (detailLead?._id === editingLead._id) setDetailLead(res.lead);
         setEditModalOpen(false);
         fetchNewLeads();
       }
@@ -138,6 +145,8 @@ export const NewLeadsPage: React.FC = () => {
       const res = await leadService.addNote(leadId, content, options);
       if (res.success) {
         toast('Conversation Logged', 'Update saved! Lead automatically moved to active Leads.', 'success');
+        setLeads((prev) => prev.filter((l) => l._id !== leadId));
+        if (detailLead?._id === leadId) setDetailLead(res.lead);
         fetchNewLeads();
       }
     } catch (err: any) {
@@ -150,6 +159,8 @@ export const NewLeadsPage: React.FC = () => {
       const res = await leadService.updateLead(leadId, { status });
       if (res.success) {
         toast('Status Changed', `Status updated to ${status}. Lead moved to active Leads.`, 'success');
+        setLeads((prev) => prev.filter((l) => l._id !== leadId));
+        if (detailLead?._id === leadId) setDetailLead(res.lead);
         fetchNewLeads();
       }
     } catch (err: any) {
@@ -162,6 +173,8 @@ export const NewLeadsPage: React.FC = () => {
       const res = await leadService.completeFollowUp(leadId, nextDate);
       if (res.success) {
         toast('Follow-up Completed', 'Lead moved to active Leads.', 'success');
+        setLeads((prev) => prev.filter((l) => l._id !== leadId));
+        if (detailLead?._id === leadId) setDetailLead(res.lead);
         fetchNewLeads();
       }
     } catch (err: any) {
