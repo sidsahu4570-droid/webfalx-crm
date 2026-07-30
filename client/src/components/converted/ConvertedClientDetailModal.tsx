@@ -170,8 +170,8 @@ export const ConvertedClientDetailModal: React.FC<ConvertedClientDetailModalProp
       maxWidth="max-w-4xl"
     >
       <div className="space-y-5">
-        {/* Top Header Card & Approval Status */}
-        <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        {/* Desktop Header Card & Approval Status */}
+        <div className="hidden md:flex bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
             <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md">
               {client.clientName.charAt(0).toUpperCase()}
@@ -218,44 +218,94 @@ export const ConvertedClientDetailModal: React.FC<ConvertedClientDetailModalProp
           )}
         </div>
 
+        {/* Mobile Header Card & Approval Status */}
+        <div className="flex md:hidden flex-col bg-slate-50 dark:bg-slate-800/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0">
+              {client.clientName.charAt(0).toUpperCase()}
+            </div>
+            <div className="space-y-1 min-w-0 flex-1">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white break-words leading-tight">{client.clientName}</h3>
+              <p className="text-xs text-slate-500 font-semibold">Company: {client.company || 'N/A'}</p>
+              <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold font-mono">Phone: {client.phone || 'N/A'}</p>
+            </div>
+          </div>
+
+          {/* Badges Container */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                client.approvalStatus === 'Approved'
+                  ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20'
+                  : client.approvalStatus === 'Rejected'
+                  ? 'bg-rose-500/10 text-rose-600 border-rose-500/20'
+                  : 'bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse'
+              }`}
+            >
+              {client.approvalStatus}
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-650 dark:text-purple-355 border border-purple-200/60">
+              {client.projectType === 'app' ? '📱 App Project' : '🌐 Website Project'}
+            </span>
+          </div>
+
+          {/* Action buttons full-width */}
+          {user?.role === 'admin' && client.approvalStatus === 'Pending Approval' && onApproveClient && (
+            <div className="flex flex-col space-y-2.5 pt-1">
+              <button
+                onClick={() => onApproveClient(client._id, 'Approved')}
+                className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 rounded-xl transition-all shadow-sm flex items-center justify-center"
+              >
+                Approve Client
+              </button>
+              <button
+                onClick={() => onApproveClient(client._id, 'Rejected')}
+                className="w-full h-11 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 rounded-xl transition-all shadow-sm flex items-center justify-center"
+              >
+                Reject
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Tab Navigation */}
-        <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold">
+        <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 text-xs font-bold overflow-x-auto whitespace-nowrap scrollbar-thin pb-1">
           <button
             onClick={() => setActiveTab('financials')}
-            className={`pb-2.5 px-3 border-b-2 transition-all ${
+            className={`pb-2.5 px-3 border-b-2 transition-all shrink-0 ${
               activeTab === 'financials'
                 ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-205'
             }`}
           >
             📊 Financial Summary
           </button>
           <button
             onClick={() => setActiveTab('payments')}
-            className={`pb-2.5 px-3 border-b-2 transition-all ${
+            className={`pb-2.5 px-3 border-b-2 transition-all shrink-0 ${
               activeTab === 'payments'
                 ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-205'
             }`}
           >
             💳 Client Payments ({paymentHistory.length})
           </button>
           <button
             onClick={() => setActiveTab('expenses')}
-            className={`pb-2.5 px-3 border-b-2 transition-all ${
+            className={`pb-2.5 px-3 border-b-2 transition-all shrink-0 ${
               activeTab === 'expenses'
                 ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-205'
             }`}
           >
             💸 Expense History ({expenseHistory.length})
           </button>
           <button
             onClick={() => setActiveTab('website')}
-            className={`pb-2.5 px-3 border-b-2 transition-all ${
+            className={`pb-2.5 px-3 border-b-2 transition-all shrink-0 ${
               activeTab === 'website'
                 ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-205'
             }`}
           >
             🌐 Project Milestones ({websiteUpdates.length})
@@ -263,10 +313,10 @@ export const ConvertedClientDetailModal: React.FC<ConvertedClientDetailModalProp
           {user?.role === 'admin' && (
             <button
               onClick={() => setActiveTab('fieldLocks')}
-              className={`pb-2.5 px-3 border-b-2 transition-all ${
+              className={`pb-2.5 px-3 border-b-2 transition-all shrink-0 ${
                 activeTab === 'fieldLocks'
                   ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
-                  : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                  : 'border-transparent text-slate-400 hover:text-slate-700 dark:hover:text-slate-205'
               }`}
             >
               🔒 Admin Field Locker
