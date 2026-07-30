@@ -170,8 +170,7 @@ export const ConvertedClientDetailModal: React.FC<ConvertedClientDetailModalProp
       maxWidth="max-w-4xl"
     >
       <div className="space-y-5">
-        {/* Desktop Header Card & Approval Status */}
-        <div className="hidden md:flex bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 items-center justify-between gap-3">
+        <div className="hidden lg:flex bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
             <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md">
               {client.clientName.charAt(0).toUpperCase()}
@@ -219,7 +218,7 @@ export const ConvertedClientDetailModal: React.FC<ConvertedClientDetailModalProp
         </div>
 
         {/* Mobile Header Card & Approval Status */}
-        <div className="flex md:hidden flex-col bg-slate-50 dark:bg-slate-800/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+        <div className="flex lg:hidden flex-col bg-slate-50 dark:bg-slate-800/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
           <div className="flex items-start space-x-3.5">
             <div className="w-11 h-11 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shrink-0">
               {client.clientName.charAt(0).toUpperCase()}
@@ -227,7 +226,7 @@ export const ConvertedClientDetailModal: React.FC<ConvertedClientDetailModalProp
             <div className="space-y-1 min-w-0 flex-1">
               <h3 className="text-base font-extrabold text-slate-900 dark:text-white break-words leading-tight">{client.clientName}</h3>
               <p className="text-xs text-slate-500 font-semibold">Company: {client.company || 'N/A'}</p>
-              <p className="text-xs text-slate-550 dark:text-slate-400 font-semibold font-mono">Phone: {client.phone || 'N/A'}</p>
+              <p className="text-xs text-slate-555 dark:text-slate-400 font-semibold font-mono">Phone: {client.phone || 'N/A'}</p>
             </div>
           </div>
 

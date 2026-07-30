@@ -197,11 +197,11 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
       </div>
 
       {/* Action Buttons Grid */}
-      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-2 justify-between" onClick={(e) => e.stopPropagation()}>
+      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
         {lead.phone && onWhatsapp && (
           <button
             onClick={onWhatsapp}
-            className="flex-1 min-w-[80px] py-2 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-405 font-bold rounded-xl flex items-center justify-center space-x-1 border border-emerald-250 dark:border-emerald-900/30 transition-all text-[11px]"
+            className="w-full py-2.5 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-450 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-emerald-250 dark:border-emerald-900/30 transition-all text-xs"
           >
             <MessageCircle className="w-3.5 h-3.5" />
             <span>WhatsApp</span>
@@ -209,24 +209,31 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
         )}
         <button
           onClick={onQuickNote}
-          className="flex-1 min-w-[70px] py-2 bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-650 dark:text-indigo-400 font-bold rounded-xl flex items-center justify-center space-x-1 border border-indigo-200 dark:border-indigo-900/30 transition-all text-[11px]"
+          className="w-full py-2.5 bg-indigo-50 dark:bg-indigo-950/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 text-indigo-650 dark:text-indigo-400 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-indigo-200 dark:border-indigo-900/30 transition-all text-xs"
         >
           <MessageSquarePlus className="w-3.5 h-3.5" />
-          <span>Note</span>
+          <span>Add Note</span>
         </button>
         <button
           onClick={onCompleteFollowUp}
-          className="flex-1 min-w-[70px] py-2 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-455 font-bold rounded-xl flex items-center justify-center space-x-1 border border-emerald-205 dark:border-emerald-900/30 transition-all text-[11px]"
+          className="w-full py-2.5 bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-emerald-600 dark:text-emerald-450 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-emerald-205 dark:border-emerald-900/30 transition-all text-xs"
         >
           <CheckCircle className="w-3.5 h-3.5" />
-          <span>Done</span>
+          <span>Mark Done</span>
         </button>
         <button
           onClick={onEdit}
-          className="flex-1 min-w-[60px] py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-350 font-bold rounded-xl flex items-center justify-center space-x-1 border border-slate-200 dark:border-slate-700 transition-all text-[11px]"
+          className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-350 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-slate-200 dark:border-slate-700 transition-all text-xs"
         >
           <Edit2 className="w-3.5 h-3.5" />
           <span>Edit</span>
+        </button>
+        <button
+          onClick={onDelete}
+          className="w-full col-span-2 py-2.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-450 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-rose-200 dark:border-rose-900/30 transition-all text-xs"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Delete</span>
         </button>
       </div>
     </div>

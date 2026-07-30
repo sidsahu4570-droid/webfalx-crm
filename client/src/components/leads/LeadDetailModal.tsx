@@ -146,7 +146,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
     >
       <div className="space-y-6">
         {/* Desktop Header Card */}
-        <div className="hidden md:flex bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 items-center justify-between gap-4">
+        <div className="hidden lg:flex bg-slate-50 dark:bg-slate-800/60 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 items-center justify-between gap-4">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shadow-indigo-500/20">
               {lead.name.charAt(0).toUpperCase()}
@@ -209,55 +209,58 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
         </div>
 
         {/* Mobile Header Card */}
-        <div className="flex md:hidden flex-col bg-slate-50 dark:bg-slate-800/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
-          <div className="flex items-start space-x-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-md shadow-indigo-500/20 shrink-0">
+        <div className="flex lg:hidden flex-col bg-slate-50 dark:bg-slate-800/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4 w-full">
+          <div className="flex items-start space-x-4">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-600 text-white font-extrabold flex items-center justify-center text-xl shadow-md shadow-indigo-500/20 shrink-0">
               {lead.name.charAt(0).toUpperCase()}
             </div>
-            <div className="space-y-1.5 min-w-0 flex-1">
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-white break-words leading-tight">{lead.name}</h3>
+            <div className="space-y-2 min-w-0 flex-1">
+              <h3 className="text-lg font-extrabold text-slate-900 dark:text-white break-words leading-tight">{lead.name}</h3>
               {lead.company && (
-                <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{lead.company}</p>
+                <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">{lead.company}</p>
               )}
-              <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
-                <span className="font-mono bg-indigo-50 dark:bg-indigo-950/60 px-1.5 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
-                  No. #{lead.serialNumber || 'N/A'}
-                </span>
-                <span>•</span>
-                <span>Assigned to: <strong className="text-slate-750 dark:text-slate-350">{lead.callerName}</strong></span>
-              </div>
-              <p className="text-[11px] text-slate-400 flex items-center">
-                <Clock className="w-3.5 h-3.5 mr-1" />
-                Updated {formatTimeAgo(lead.updatedAt)}
+              <p className="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                Lead #{lead.serialNumber || 'N/A'}
               </p>
+              <div className="text-xs text-slate-500 dark:text-slate-400 space-y-1 pt-0.5">
+                <div>
+                  Assigned to: <strong className="text-slate-700 dark:text-slate-305">{lead.callerName}</strong>
+                </div>
+                <div className="flex items-center">
+                  <Clock className="w-3.5 h-3.5 mr-1 text-slate-400 shrink-0" />
+                  Last Updated: <span className="ml-1 text-slate-700 dark:text-slate-300 font-medium">{formatTimeAgo(lead.updatedAt)}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Badges Container */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${getStatusBadgeStyle(
-                lead.status
-              )}`}
-            >
-              {lead.status}
-            </span>
-            <span
-              className={`px-2.5 py-1 rounded text-xs font-semibold border ${getPriorityBadgeStyle(
-                lead.priority
-              )}`}
-            >
-              {lead.priority}
-            </span>
-            {lead.categoryName && (
-              <span className="px-2.5 py-1 rounded text-xs font-bold bg-indigo-500/10 text-indigo-650 dark:text-indigo-350 border border-indigo-200 dark:border-indigo-800">
-                📂 {lead.categoryName}
+          <hr className="border-slate-200 dark:border-slate-700/60" />
+
+          {/* Badges Stacked Vertically */}
+          <div className="flex flex-col space-y-2 pt-0.5">
+            <div className="flex">
+              <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${getStatusBadgeStyle(lead.status)}`}>
+                {lead.status}
               </span>
+            </div>
+            <div className="flex">
+              <span className={`px-2.5 py-1 rounded text-xs font-semibold border ${getPriorityBadgeStyle(lead.priority)}`}>
+                {lead.priority} Priority
+              </span>
+            </div>
+            {lead.categoryName && (
+              <div className="flex">
+                <span className="px-2.5 py-1 rounded text-xs font-bold bg-indigo-500/10 text-indigo-650 dark:text-indigo-350 border border-indigo-200 dark:border-indigo-800">
+                  📂 {lead.categoryName}
+                </span>
+              </div>
             )}
             {lead.cityName && (
-              <span className="px-2.5 py-1 rounded text-xs font-bold bg-indigo-500/10 text-indigo-650 dark:text-indigo-350 border border-indigo-200 dark:border-indigo-800">
-                🌆 {lead.cityName}
-              </span>
+              <div className="flex">
+                <span className="px-2.5 py-1 rounded text-xs font-bold bg-indigo-500/10 text-indigo-650 dark:text-indigo-350 border border-indigo-200 dark:border-indigo-800">
+                  🌆 {lead.cityName}
+                </span>
+              </div>
             )}
           </div>
 
@@ -267,7 +270,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             <select
               value={lead.status}
               onChange={(e) => onUpdateStatus(lead._id, e.target.value as LeadStatus)}
-              className="w-full h-11 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
+              className="w-full h-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
             >
               <option value="New">New</option>
               <option value="Interested">Interested</option>
@@ -281,7 +284,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
         </div>
 
         {/* Desktop Contact Info & Followup Controls */}
-        <div className="hidden md:grid grid-cols-2 gap-4">
+        <div className="hidden lg:grid grid-cols-2 gap-4">
           <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
               Contact Details
@@ -326,7 +329,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </div>
 
             <div className="pt-2 border-t border-amber-500/20 space-y-2">
-              <label className="block text-[11px] font-semibold text-slate-650 dark:text-slate-305">
+              <label className="block text-[11px] font-semibold text-slate-650 dark:text-slate-355">
                 Set Next Follow-up (Optional)
               </label>
               <div className="flex space-x-2">
@@ -350,16 +353,16 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
         </div>
 
         {/* Mobile Contact Info & Followup Controls */}
-        <div className="flex md:hidden flex-col gap-4">
+        <div className="flex lg:hidden flex-col gap-4 w-full">
           {/* Mobile Contact details */}
-          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-3.5 w-full">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
               Contact Details
             </h4>
             <div className="flex flex-col space-y-3">
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">Company</span>
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-205 flex items-center mt-0.5">
+                <p className="text-xs font-bold text-slate-850 dark:text-slate-200 flex items-center mt-0.5">
                   <Building className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
                   {lead.company || 'Company not specified'}
                 </p>
@@ -367,7 +370,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">Phone Number</span>
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-205 flex items-center mt-0.5">
+                <p className="text-xs font-bold text-slate-850 dark:text-slate-200 flex items-center mt-0.5">
                   <Phone className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
                   {lead.phone || 'Phone not provided'}
                 </p>
@@ -381,18 +384,28 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
               <div>
                 <span className="text-[10px] text-slate-400 uppercase font-semibold block">Email Address</span>
-                <p className="text-xs font-bold text-slate-800 dark:text-slate-205 flex items-center mt-0.5 min-w-0">
+                <p className="text-xs font-bold text-slate-850 dark:text-slate-200 flex items-center mt-0.5 min-w-0">
                   <Mail className="w-4 h-4 mr-2 text-slate-400 shrink-0" />
                   <a href={`mailto:${lead.email}`} className="hover:text-indigo-600 truncate break-all">
                     {lead.email || 'Email not provided'}
                   </a>
                 </p>
               </div>
+
+              {lead.address && (
+                <div>
+                  <span className="text-[10px] text-slate-400 uppercase font-semibold block">Address</span>
+                  <p className="text-xs font-bold text-slate-855 dark:text-slate-205 flex items-start mt-0.5">
+                    <MapPin className="w-4 h-4 mr-2 text-slate-400 shrink-0 mt-0.5" />
+                    <span>{lead.address}</span>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Mobile Follow-up Management */}
-          <div className="bg-amber-500/5 dark:bg-amber-500/10 p-5 rounded-2xl border border-amber-500/20 space-y-4">
+          <div className="bg-amber-500/5 dark:bg-amber-500/10 p-5 rounded-2xl border border-amber-500/20 space-y-4 w-full">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider flex items-center">
                 <Calendar className="w-4 h-4 mr-1.5" />
@@ -404,17 +417,17 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </div>
 
             <div>
-              <p className="text-xs text-slate-600 dark:text-slate-300">
-                Next Follow-up Scheduled:{' '}
-                <span className={`font-extrabold block text-sm mt-0.5 ${isDue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-850 dark:text-slate-200'}`}>
-                  {lead.nextFollowUpDate ? formatDate(lead.nextFollowUpDate) : 'None'}
-                </span>
-              </p>
+              <span className="text-[10px] text-amber-700 dark:text-amber-400 uppercase font-semibold block">Scheduled Follow-up</span>
+              <span className={`font-extrabold block text-sm mt-0.5 ${isDue ? 'text-rose-600 dark:text-rose-400' : 'text-slate-850 dark:text-slate-200'}`}>
+                {lead.nextFollowUpDate ? formatDate(lead.nextFollowUpDate) : 'None'}
+              </span>
             </div>
 
-            <div className="pt-3 border-t border-amber-500/20 space-y-2.5">
+            <hr className="border-amber-500/20" />
+
+            <div className="space-y-2.5">
               <label className="block text-[11px] font-bold text-slate-605 dark:text-slate-350">
-                Set Next Follow-up (Optional)
+                Next Follow-up
               </label>
               <input
                 type="date"
@@ -425,7 +438,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               <button
                 type="button"
                 onClick={handleFollowUpDone}
-                className="w-full h-11 flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 rounded-xl shadow-sm transition-all"
+                className="w-full h-12 flex items-center justify-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 rounded-xl shadow-sm transition-all"
               >
                 <CheckCircle className="w-4 h-4" />
                 <span>Mark Done</span>
@@ -436,7 +449,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
         {/* Desktop Reassign Lead (Admin) */}
         {user?.role === 'admin' && onAssignLead && callers.length > 0 && (
-          <div className="hidden md:flex bg-indigo-50/70 dark:bg-indigo-950/40 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800 flex-wrap items-center justify-between gap-3">
+          <div className="hidden lg:flex bg-indigo-50/70 dark:bg-indigo-950/40 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-800 flex-wrap items-center justify-between gap-3">
             <div className="flex items-center space-x-2">
               <UserPlus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -470,7 +483,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
         {/* Mobile Reassign Lead (Admin) */}
         {user?.role === 'admin' && onAssignLead && callers.length > 0 && (
-          <div className="flex md:hidden flex-col bg-indigo-50/70 dark:bg-indigo-950/40 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-800 space-y-3">
+          <div className="flex lg:hidden flex-col bg-indigo-50/70 dark:bg-indigo-950/40 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-800 space-y-3 w-full">
             <div className="flex items-center space-x-2">
               <UserPlus className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
               <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -481,7 +494,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               <select
                 value={selectedCaller}
                 onChange={(e) => setSelectedCaller(e.target.value)}
-                className="w-full h-11 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200"
+                className="w-full h-12 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200"
               >
                 <option value="">Select Caller...</option>
                 {callers.map((c) => (
@@ -494,7 +507,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 type="button"
                 onClick={handleReassign}
                 disabled={!selectedCaller || reassigning}
-                className="w-full h-11 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold px-4 rounded-xl shadow-md transition-all flex items-center justify-center"
+                className="w-full h-12 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-bold px-4 rounded-xl shadow-md transition-all flex items-center justify-center"
               >
                 {reassigning ? 'Assigning...' : 'Assign Prospect'}
               </button>
@@ -689,7 +702,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                  <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium break-words line-clamp-3 hover:line-clamp-none cursor-pointer transition-all">
                     "{note.content}"
                   </p>
 
