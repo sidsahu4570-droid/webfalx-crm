@@ -278,15 +278,6 @@ export const ConvertedClientTable: React.FC<ConvertedClientTableProps> = ({
                 <Eye className="w-4 h-4" />
               </button>
 
-              {isAdmin && onDeleteClient && (
-                <button
-                  onClick={() => onDeleteClient(client)}
-                  className="p-2 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 text-rose-600 dark:text-rose-450 font-bold rounded-xl flex items-center justify-center border border-rose-200 dark:border-rose-900/30 transition-all text-xs"
-                  title="Soft Delete & Archive Record"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
             </div>
           </div>
         ))}

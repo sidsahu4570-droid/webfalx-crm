@@ -223,17 +223,12 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
         </button>
         <button
           onClick={onEdit}
-          className="w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-350 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-slate-200 dark:border-slate-700 transition-all text-xs"
+          className={`w-full py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-350 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-slate-200 dark:border-slate-700 transition-all text-xs ${
+            !(lead.phone && onWhatsapp) ? 'col-span-2' : ''
+          }`}
         >
           <Edit2 className="w-3.5 h-3.5" />
           <span>Edit</span>
-        </button>
-        <button
-          onClick={onDelete}
-          className="w-full col-span-2 py-2.5 bg-rose-50 dark:bg-rose-950/20 hover:bg-rose-100 dark:hover:bg-rose-900/40 text-rose-600 dark:text-rose-450 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-rose-200 dark:border-rose-900/30 transition-all text-xs"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-          <span>Delete</span>
         </button>
       </div>
     </div>

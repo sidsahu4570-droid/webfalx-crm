@@ -152,7 +152,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
           </button>
           <button
             onClick={() => onDeleteLead(lead)}
-            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
+            className="hidden md:inline-flex p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
             title="Delete"
           >
             <Trash2 className="w-4 h-4" />
