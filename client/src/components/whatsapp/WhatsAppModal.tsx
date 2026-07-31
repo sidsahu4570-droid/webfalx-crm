@@ -95,8 +95,25 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
   );
   const [sending, setSending] = useState(false);
 
-  const cleanPhone = phone.replace(/[^0-9]/g, '');
-  const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+  const normalizePhone = (num: string): string => {
+    // Remove spaces, dashes, brackets, dots, and non-numeric characters except '+'
+    let clean = num.replace(/[\s\-\(\)\.]/g, '').replace(/[^\d+]/g, '');
+    if (clean.startsWith('+91')) {
+      return clean;
+    }
+    if (clean.startsWith('91')) {
+      return '+' + clean;
+    }
+    if (clean.startsWith('0')) {
+      return '+91' + clean.slice(1);
+    }
+    if (clean.length === 10) {
+      return '+91' + clean;
+    }
+    return clean;
+  };
+
+  const normalizedPhone = normalizePhone(phone);
 
   const handleTemplateChange = (templateId: string) => {
     setSelectedTemplate(templateId);
@@ -106,34 +123,19 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     }
   };
 
-  const handleSendWhatsApp = async (e: React.FormEvent) => {
+  const handleSendWhatsApp = (e: React.FormEvent) => {
     e.preventDefault();
     if (!customMessage.trim()) return;
 
-    setSending(true);
     try {
-      // Log WhatsApp Communication
-      await whatsAppService.logMessage({
-        leadId,
-        clientId,
-        phone,
-        message: customMessage,
-        templateName: TEMPLATES.find((t) => t.id === selectedTemplate)?.title || 'Custom Message',
-        status: 'Sent'
-      });
-
-      toast('WhatsApp Logged', `Message sent to ${recipientName} (${phone})`, 'success');
-
       // Launch WhatsApp Web / App directly
-      const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(customMessage)}`;
+      const waUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(customMessage)}`;
       window.open(waUrl, '_blank');
 
       if (onLogSaved) onLogSaved();
       onClose();
     } catch (err: any) {
       toast('Error', err.message, 'error');
-    } finally {
-      setSending(false);
     }
   };
 
@@ -142,7 +144,7 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={`Send WhatsApp to ${recipientName}`}
-      subtitle={`Mobile: +${formattedPhone} • One-Click Quick Messaging & Logging`}
+      subtitle={`Mobile: ${normalizedPhone} • One-Click Quick Messaging`}
     >
       <form onSubmit={handleSendWhatsApp} className="space-y-4 text-xs">
         <div>
@@ -190,11 +192,10 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
           </button>
           <button
             type="submit"
-            disabled={sending}
             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl shadow-md flex items-center space-x-1.5 transition-all"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>{sending ? 'Launching...' : 'Open WhatsApp & Log'}</span>
+            <span>Open WhatsApp & Log</span>
           </button>
         </div>
       </form>
