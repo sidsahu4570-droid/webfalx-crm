@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { DailyReport, IDailyReport } from '../models/DailyReport';
 import { ReportEditHistory } from '../models/ReportEditHistory';
 import { ReportAudit } from '../models/ReportAudit';
@@ -533,54 +534,210 @@ export const getNewLeadReports = async (req: Request, res: Response) => {
     const user = req.user!;
     const { callerId, filterRange, startDate, endDate, page = 1, limit = 50 } = req.query;
 
-    const filter: any = {};
+    const matchFilter: any = {};
 
     if (user.role === 'caller') {
-      filter.userId = user.id;
+      matchFilter.userId = new mongoose.Types.ObjectId(user.id);
     } else if (user.role === 'admin' && callerId) {
-      filter.userId = callerId;
+      matchFilter.userId = new mongoose.Types.ObjectId(callerId as string);
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     if (filterRange === 'today') {
-      filter.dateString = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0];
+      matchFilter.date = todayStr;
     } else if (filterRange === 'yesterday') {
       const yest = new Date(today);
       yest.setDate(yest.getDate() - 1);
-      filter.dateString = yest.toISOString().split('T')[0];
+      const yestStr = yest.toISOString().split('T')[0];
+      matchFilter.date = yestStr;
     } else if (filterRange === 'last7days') {
       const past = new Date(today);
       past.setDate(past.getDate() - 7);
-      filter.reportDate = { $gte: past };
+      matchFilter.createdAt = { $gte: past };
     } else if (filterRange === 'last15days') {
       const past = new Date(today);
       past.setDate(past.getDate() - 15);
-      filter.reportDate = { $gte: past };
+      matchFilter.createdAt = { $gte: past };
     } else if (filterRange === 'last30days') {
       const past = new Date(today);
       past.setDate(past.getDate() - 30);
-      filter.reportDate = { $gte: past };
+      matchFilter.createdAt = { $gte: past };
     } else if (filterRange === 'thisMonth') {
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      filter.reportDate = { $gte: firstDay };
+      matchFilter.createdAt = { $gte: firstDay };
     } else if (filterRange === 'custom' && startDate && endDate) {
-      filter.reportDate = {
-        $gte: new Date(String(startDate)),
-        $lte: new Date(String(endDate) + 'T23:59:59')
+      const start = new Date(startDate as string);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      matchFilter.createdAt = {
+        $gte: start,
+        $lte: end
       };
     }
 
+    const pipeline: any[] = [
+      { $match: matchFilter },
+      // Group by caller, date, and lead to deduplicate same-day activities on the same lead
+      {
+        $group: {
+          _id: {
+            userId: "$userId",
+            date: "$date",
+            leadId: "$leadId"
+          },
+          callerName: { $first: "$callerName" },
+          callerEmail: { $first: "$callerEmail" },
+          hasCall: { $max: 1 },
+          hasConnected: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$updatedStatus", "Not Picked"] },
+                    { $ne: ["$updatedStatus", "New"] },
+                    { $ne: ["$activityType", "Not Picked"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasNotPicked: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Not Picked"] },
+                    { $eq: ["$activityType", "Not Picked"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasNotInterested: {
+            $max: {
+              $cond: [
+                { $eq: ["$updatedStatus", "Not Interested"] },
+                1,
+                0
+              ]
+            }
+          },
+          hasWhatsApp: {
+            $max: {
+              $cond: [
+                { $eq: ["$whatsAppStatus", "Yes"] },
+                1,
+                0
+              ]
+            }
+          },
+          hasFollowUp: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Follow-up"] },
+                    { $eq: ["$activityType", "Follow-up"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasMeeting: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Meeting Scheduled"] },
+                    { $eq: ["$activityType", "Meeting"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasConverted: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Converted"] },
+                    { $eq: ["$activityType", "Converted"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      // Group by caller and date to aggregate final metrics
+      {
+        $group: {
+          _id: {
+            userId: "$_id.userId",
+            date: "$_id.date"
+          },
+          callerName: { $first: "$callerName" },
+          callerEmail: { $first: "$callerEmail" },
+          totalCalls: { $sum: "$hasCall" },
+          connectedCalls: { $sum: "$hasConnected" },
+          notPickedCalls: { $sum: "$hasNotPicked" },
+          notInterestedLeads: { $sum: "$hasNotInterested" },
+          whatsAppSent: { $sum: "$hasWhatsApp" },
+          followUp: { $sum: "$hasFollowUp" },
+          meetingsScheduled: { $sum: "$hasMeeting" },
+          convertedClients: { $sum: "$hasConverted" }
+        }
+      },
+      {
+        $project: {
+          _id: { $concat: [{ $toString: "$_id.userId" }, "_", "$_id.date"] },
+          userId: "$_id.userId",
+          dateString: "$_id.date",
+          callerName: 1,
+          callerEmail: 1,
+          reportDate: {
+            $dateFromString: {
+              dateString: "$_id.date",
+              format: "%Y-%m-%d",
+              onError: new Date(),
+              onNull: new Date()
+            }
+          },
+          totalCalls: 1,
+          connectedCalls: 1,
+          notPickedCalls: 1,
+          notInterestedLeads: 1,
+          whatsAppSent: 1,
+          followUp: 1,
+          meetingsScheduled: 1,
+          convertedClients: 1
+        }
+      },
+      { $sort: { dateString: -1 } }
+    ];
+
+    const results = await NewLeadReportAudit.aggregate(pipeline);
+    const total = results.length;
     const skip = (Number(page) - 1) * Number(limit);
-    const [reports, total] = await Promise.all([
-      NewLeadDailyReport.find(filter).sort({ reportDate: -1 }).skip(skip).limit(Number(limit)),
-      NewLeadDailyReport.countDocuments(filter)
-    ]);
+    const paginatedReports = results.slice(skip, skip + Number(limit));
 
     res.json({
       success: true,
-      reports,
+      reports: paginatedReports,
       pagination: {
         total,
         page: Number(page),
@@ -597,54 +754,210 @@ export const getExistingLeadReports = async (req: Request, res: Response) => {
     const user = req.user!;
     const { callerId, filterRange, startDate, endDate, page = 1, limit = 50 } = req.query;
 
-    const filter: any = {};
+    const matchFilter: any = {};
 
     if (user.role === 'caller') {
-      filter.userId = user.id;
+      matchFilter.userId = new mongoose.Types.ObjectId(user.id);
     } else if (user.role === 'admin' && callerId) {
-      filter.userId = callerId;
+      matchFilter.userId = new mongoose.Types.ObjectId(callerId as string);
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     if (filterRange === 'today') {
-      filter.dateString = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toISOString().split('T')[0];
+      matchFilter.date = todayStr;
     } else if (filterRange === 'yesterday') {
       const yest = new Date(today);
       yest.setDate(yest.getDate() - 1);
-      filter.dateString = yest.toISOString().split('T')[0];
+      const yestStr = yest.toISOString().split('T')[0];
+      matchFilter.date = yestStr;
     } else if (filterRange === 'last7days') {
       const past = new Date(today);
       past.setDate(past.getDate() - 7);
-      filter.reportDate = { $gte: past };
+      matchFilter.createdAt = { $gte: past };
     } else if (filterRange === 'last15days') {
       const past = new Date(today);
       past.setDate(past.getDate() - 15);
-      filter.reportDate = { $gte: past };
+      matchFilter.createdAt = { $gte: past };
     } else if (filterRange === 'last30days') {
       const past = new Date(today);
       past.setDate(past.getDate() - 30);
-      filter.reportDate = { $gte: past };
+      matchFilter.createdAt = { $gte: past };
     } else if (filterRange === 'thisMonth') {
       const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-      filter.reportDate = { $gte: firstDay };
+      matchFilter.createdAt = { $gte: firstDay };
     } else if (filterRange === 'custom' && startDate && endDate) {
-      filter.reportDate = {
-        $gte: new Date(String(startDate)),
-        $lte: new Date(String(endDate) + 'T23:59:59')
+      const start = new Date(startDate as string);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate as string);
+      end.setHours(23, 59, 59, 999);
+      matchFilter.createdAt = {
+        $gte: start,
+        $lte: end
       };
     }
 
+    const pipeline: any[] = [
+      { $match: matchFilter },
+      // Group by caller, date, and lead to deduplicate same-day activities on the same lead
+      {
+        $group: {
+          _id: {
+            userId: "$userId",
+            date: "$date",
+            leadId: "$leadId"
+          },
+          callerName: { $first: "$callerName" },
+          callerEmail: { $first: "$callerEmail" },
+          hasCall: { $max: 1 },
+          hasConnected: {
+            $max: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$updatedStatus", "Not Picked"] },
+                    { $ne: ["$updatedStatus", "New"] },
+                    { $ne: ["$activityType", "Not Picked"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasNotPicked: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Not Picked"] },
+                    { $eq: ["$activityType", "Not Picked"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasNotInterested: {
+            $max: {
+              $cond: [
+                { $eq: ["$updatedStatus", "Not Interested"] },
+                1,
+                0
+              ]
+            }
+          },
+          hasWhatsApp: {
+            $max: {
+              $cond: [
+                { $eq: ["$whatsAppStatus", "Yes"] },
+                1,
+                0
+              ]
+            }
+          },
+          hasFollowUp: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Follow-up"] },
+                    { $eq: ["$activityType", "Follow-up"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasMeeting: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Meeting Scheduled"] },
+                    { $eq: ["$activityType", "Meeting"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          },
+          hasConverted: {
+            $max: {
+              $cond: [
+                {
+                  $or: [
+                    { $eq: ["$updatedStatus", "Converted"] },
+                    { $eq: ["$activityType", "Converted"] }
+                  ]
+                },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      // Group by caller and date to aggregate final metrics
+      {
+        $group: {
+          _id: {
+            userId: "$_id.userId",
+            date: "$_id.date"
+          },
+          callerName: { $first: "$callerName" },
+          callerEmail: { $first: "$callerEmail" },
+          totalCalls: { $sum: "$hasCall" },
+          connectedCalls: { $sum: "$hasConnected" },
+          notPickedCalls: { $sum: "$hasNotPicked" },
+          notInterestedLeads: { $sum: "$hasNotInterested" },
+          whatsAppSent: { $sum: "$hasWhatsApp" },
+          followUp: { $sum: "$hasFollowUp" },
+          meetingsScheduled: { $sum: "$hasMeeting" },
+          convertedClients: { $sum: "$hasConverted" }
+        }
+      },
+      {
+        $project: {
+          _id: { $concat: [{ $toString: "$_id.userId" }, "_", "$_id.date"] },
+          userId: "$_id.userId",
+          dateString: "$_id.date",
+          callerName: 1,
+          callerEmail: 1,
+          reportDate: {
+            $dateFromString: {
+              dateString: "$_id.date",
+              format: "%Y-%m-%d",
+              onError: new Date(),
+              onNull: new Date()
+            }
+          },
+          totalCalls: 1,
+          connectedCalls: 1,
+          notPickedCalls: 1,
+          notInterestedLeads: 1,
+          whatsAppSent: 1,
+          followUp: 1,
+          meetingsScheduled: 1,
+          convertedClients: 1
+        }
+      },
+      { $sort: { dateString: -1 } }
+    ];
+
+    const results = await ExistingLeadReportAudit.aggregate(pipeline);
+    const total = results.length;
     const skip = (Number(page) - 1) * Number(limit);
-    const [reports, total] = await Promise.all([
-      ExistingLeadDailyReport.find(filter).sort({ reportDate: -1 }).skip(skip).limit(Number(limit)),
-      ExistingLeadDailyReport.countDocuments(filter)
-    ]);
+    const paginatedReports = results.slice(skip, skip + Number(limit));
 
     res.json({
       success: true,
-      reports,
+      reports: paginatedReports,
       pagination: {
         total,
         page: Number(page),

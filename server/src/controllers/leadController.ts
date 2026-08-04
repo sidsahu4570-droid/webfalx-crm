@@ -722,6 +722,8 @@ export const completeFollowUp = async (req: Request, res: Response) => {
       return res.status(403).json({ success: false, message: 'Access denied to this lead' });
     }
 
+    const wasNewLead = lead.isNewLead;
+
     lead.completedFollowUps += 1;
     lead.lastContactDate = new Date();
     lead.latestUpdate = `Completed follow-up #${lead.completedFollowUps}`;
@@ -733,6 +735,22 @@ export const completeFollowUp = async (req: Request, res: Response) => {
     }
 
     await lead.save();
+
+    // Log proper activity audit
+    await recordLeadActivity({
+      userId: user.id,
+      callerName: user.name,
+      callerEmail: user.email,
+      leadId: lead._id.toString(),
+      leadName: lead.name,
+      company: lead.company,
+      isNewLead: wasNewLead,
+      previousStatus: lead.status,
+      updatedStatus: lead.status,
+      whatsAppSent: false,
+      activityType: 'Follow-up',
+      notes: `Completed follow-up #${lead.completedFollowUps}`
+    });
 
     await logActivity({
       userId: user.id,
@@ -1009,6 +1027,22 @@ export const logCallAttempt = async (req: Request, res: Response) => {
       callInitiatedAt: new Date(),
       leadType: lead.isNewLead ? 'New Lead' : 'Existing Lead',
       userRole: user.role
+    });
+
+    // Log proper activity audit
+    await recordLeadActivity({
+      userId: user.id,
+      callerName: user.name,
+      callerEmail: user.email,
+      leadId: lead._id.toString(),
+      leadName: lead.name,
+      company: lead.company,
+      isNewLead: lead.isNewLead,
+      previousStatus: lead.status,
+      updatedStatus: lead.status,
+      whatsAppSent: false,
+      activityType: 'Call',
+      notes: 'Call attempt initiated'
     });
 
     res.json({

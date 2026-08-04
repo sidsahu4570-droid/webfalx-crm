@@ -53,6 +53,29 @@ Isme aap dekh sakte hain ki kis tarah:
 Demo dekhkar batayiye kaisa laga. Agar aap chahein to hum aapke business aur branding ke according bhi isi tarah ki professional website design kar sakte hain.`
   },
   {
+    id: 'demo_10k_20k',
+    title: '🌐 Demo Website 10K - 20K',
+    message: (name: string, company: string) =>
+      `Hello ${company || name} 😊
+
+Jaise discussion hua tha, ye raha hamara demo website.
+
+Demo Website 1
+https://korku-realty-pvt-ltd.base44.app
+
+Demo Website 2
+https://jp-real-estate-mern.vercel.app/
+
+Isme aap dekh sakte hain ki kis tarah:
+
+✅ Saare projects ek hi jagah showcase hote hain.
+✅ Property images, pricing, location aur project details properly dikhte hain.
+✅ Direct enquiry aur WhatsApp contact ka option hota hai.
+✅ Clients bina baar-baar details maange easily sab kuch explore kar sakte hain.
+
+Demo dekhkar batayiye kaisa laga. Agar aap chahein to hum aapke business aur branding ke according bhi isi tarah ki professional website design kar sakte hain.`
+  },
+  {
     id: 'followup',
     title: '📞 Lead Follow-up Reminder',
     message: (name: string) =>
