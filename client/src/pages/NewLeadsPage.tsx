@@ -300,6 +300,7 @@ export const NewLeadsPage: React.FC = () => {
             <option value="Interested">Interested</option>
             <option value="Follow-up">Follow-up</option>
             <option value="Meeting Scheduled">Meeting Scheduled</option>
+            <option value="Not Picked">Not Picked</option>
           </select>
 
           {categories.length > 0 && (

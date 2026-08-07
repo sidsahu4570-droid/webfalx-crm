@@ -45,6 +45,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
     'Meeting Scheduled',
     'Converted',
     'Not Interested',
+    'Not Picked',
     'Closed'
   ];
 
