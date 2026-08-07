@@ -342,6 +342,7 @@ export const NewLeadsPage: React.FC = () => {
             toast('Deletion Error', err.message, 'error');
           }
         }}
+        onBulkAssignSuccess={fetchNewLeads}
         onQuickNote={(l) => {
           setDetailLead(l);
         }}

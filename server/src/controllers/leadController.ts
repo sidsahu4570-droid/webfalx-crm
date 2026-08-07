@@ -1054,3 +1054,66 @@ export const logCallAttempt = async (req: Request, res: Response) => {
     res.status(500).json({ success: false, message: error.message || 'Server error' });
   }
 };
+
+export const bulkAssignLeads = async (req: Request, res: Response) => {
+  try {
+    const user = req.user!;
+    const { leadIds, targetCallerId } = req.body;
+
+    if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'No lead IDs provided for reassignment' });
+    }
+
+    if (!targetCallerId) {
+      return res.status(400).json({ success: false, message: 'No target caller ID provided' });
+    }
+
+    const targetCaller = await User.findById(targetCallerId);
+    if (!targetCaller) {
+      return res.status(404).json({ success: false, message: 'Target caller not found' });
+    }
+
+    const reassignedLeads: string[] = [];
+
+    for (const id of leadIds) {
+      const lead = await Lead.findById(id);
+      if (!lead) continue;
+
+      const oldCallerId = lead.userId ? lead.userId.toString() : null;
+      const oldCallerName = lead.callerName || 'Unassigned';
+
+      // Reassign only caller info, preserving everything else
+      lead.userId = targetCaller._id;
+      lead.callerName = targetCaller.name;
+      lead.callerEmail = targetCaller.email;
+      await lead.save();
+
+      // Log audit trail log (ASSIGN_LEAD)
+      await logActivity({
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        action: 'ASSIGN_LEAD',
+        leadId: lead._id.toString(),
+        leadName: lead.name,
+        details: `Lead reassigned\nFrom: ${oldCallerName}\nTo: ${targetCaller.name}\nBy: ${user.name}`
+      });
+
+      // Emit real-time Socket notifications to old caller, new caller, and admins
+      if (oldCallerId) {
+        emitToUser(oldCallerId, 'lead_updated', lead);
+      }
+      emitToUser(targetCaller._id.toString(), 'lead_updated', lead);
+      emitToAdmin('lead_updated', lead);
+
+      reassignedLeads.push(lead.name);
+    }
+
+    res.json({
+      success: true,
+      message: `Successfully reassigned ${reassignedLeads.length} leads to ${targetCaller.name}.`
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || 'Server error' });
+  }
+};

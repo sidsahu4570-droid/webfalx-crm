@@ -312,6 +312,7 @@ export const AdminLeadsPage: React.FC = () => {
                 toast('Deletion Error', err.message, 'error');
               }
             }}
+            onBulkAssignSuccess={fetchAllLeads}
             onQuickNote={(l) => setSelectedLead(l)}
             onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
             showCallerColumn={true}

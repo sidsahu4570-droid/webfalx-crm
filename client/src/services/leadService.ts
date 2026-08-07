@@ -71,5 +71,10 @@ export const leadService = {
   logCallAttempt: async (id: string): Promise<{ success: boolean; message: string }> => {
     const res = await api.post(`/leads/${id}/call-log`);
     return res.data;
+  },
+
+  bulkAssignLeads: async (ids: string[], targetCallerId: string): Promise<{ success: boolean; message: string }> => {
+    const res = await api.post('/leads/bulk-assign', { leadIds: ids, targetCallerId });
+    return res.data;
   }
 };

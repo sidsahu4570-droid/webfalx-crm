@@ -1,9 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { DirectCallButton } from '../common/DirectCallButton';
-import { Lead } from '../../types';
+import { Lead, User } from '../../types';
 import { FormulaEngine } from '../../utils/formulaEngine';
 import { WhatsAppModal } from '../whatsapp/WhatsAppModal';
 import { LeadCardMobile } from './LeadCardMobile';
+import { useAuth } from '../../context/AuthContext';
+import { userService } from '../../services/userService';
+import { leadService } from '../../services/leadService';
+import { Modal } from '../common/Modal';
+import { useToast } from '../../context/ToastContext';
 import {
   getStatusBadgeStyle,
   getStatusRowStyle,
@@ -37,6 +42,7 @@ interface LeadTableProps {
   onEditLead: (lead: Lead) => void;
   onDeleteLead: (lead: Lead) => void;
   onDeleteMultipleLeads?: (ids: string[]) => void;
+  onBulkAssignSuccess?: () => void;
   onQuickNote: (lead: Lead) => void;
   onCompleteFollowUp: (lead: Lead) => void;
   showCallerColumn?: boolean;
@@ -50,16 +56,69 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onEditLead,
   onDeleteLead,
   onDeleteMultipleLeads,
+  onBulkAssignSuccess,
   onQuickNote,
   onCompleteFollowUp,
   showCallerColumn = false,
   currentPage,
   pageSize
 }) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [whatsappLead, setWhatsappLead] = useState<Lead | null>(null);
   const [sortField, setSortField] = useState<keyof Lead | 'name' | 'serialNumber' | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Bulk Assign States
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [activeCallers, setActiveCallers] = useState<User[]>([]);
+  const [selectedCallerId, setSelectedCallerId] = useState('');
+  const [assigning, setAssigning] = useState(false);
+
+  const handleOpenAssignModal = async () => {
+    try {
+      const res = await userService.getUsers();
+      if (res.success && res.users) {
+        // Dropdown containing all active caller accounts
+        const callers = res.users.filter((u) => u.isActive && u.role === 'caller');
+        setActiveCallers(callers);
+        if (callers.length > 0) {
+          setSelectedCallerId(callers[0].id || callers[0]._id || '');
+        } else {
+          setSelectedCallerId('');
+        }
+      }
+      setIsAssignModalOpen(true);
+    } catch (err: any) {
+      toast('Error', err.message || 'Failed to load callers', 'error');
+    }
+  };
+
+  const handleConfirmAssign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCallerId) return;
+
+    setAssigning(true);
+    try {
+      const targetCaller = activeCallers.find((c) => (c.id || c._id) === selectedCallerId);
+      const callerName = targetCaller ? targetCaller.name : 'Caller';
+
+      const res = await leadService.bulkAssignLeads(selectedIds, selectedCallerId);
+      if (res.success) {
+        toast('Leads Reassigned', `Successfully reassigned ${selectedIds.length} leads to ${callerName}.`, 'success');
+        setSelectedIds([]);
+        setIsAssignModalOpen(false);
+        if (onBulkAssignSuccess) {
+          onBulkAssignSuccess();
+        }
+      }
+    } catch (err: any) {
+      toast('Assignment Error', err.message || 'Failed to reassign leads', 'error');
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   // Reset local sort when backend leads reference changes
   useEffect(() => {
@@ -147,6 +206,15 @@ export const LeadTable: React.FC<LeadTableProps> = ({
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Delete Selected</span>
+              </button>
+            )}
+            {user?.role === 'admin' && (
+              <button
+                onClick={handleOpenAssignModal}
+                className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-3 py-1.5 rounded-xl flex items-center space-x-1.5 transition-all shadow-md"
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Bulk Assign</span>
               </button>
             )}
             <button
@@ -442,6 +510,54 @@ export const LeadTable: React.FC<LeadTableProps> = ({
           phone={whatsappLead.phone}
         />
       )}
+
+      {/* Bulk Assign Modal */}
+      <Modal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        title="Assign Selected Leads"
+      >
+        <form onSubmit={handleConfirmAssign} className="space-y-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <div>
+            <span className="text-slate-500">Selected Leads:</span>{' '}
+            <strong className="text-indigo-600 dark:text-indigo-400 font-extrabold text-sm">{selectedIds.length}</strong>
+          </div>
+
+          <div>
+            <label className="block text-slate-500 mb-1">Assign To:</label>
+            <select
+              value={selectedCallerId}
+              onChange={(e) => setSelectedCallerId(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-800 dark:text-slate-200"
+              required
+            >
+              <option value="" disabled>Select active caller...</option>
+              {activeCallers.map((c) => (
+                <option key={c.id || c._id} value={c.id || c._id}>
+                  {c.name} ({c.email})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setIsAssignModalOpen(false)}
+              className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={assigning || !selectedCallerId}
+              className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-400 text-white px-4 py-2 rounded-xl shadow-md transition-all flex items-center space-x-1"
+            >
+              {assigning ? 'Assigning...' : 'Assign Leads'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
