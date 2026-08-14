@@ -104,7 +104,7 @@ export const LeadsPage: React.FC = () => {
         callerId: user?.role === 'admin' && callerId ? callerId : undefined,
         sortBy,
         page,
-        limit: 15,
+        limit: 50,
         categoryId: categoryId !== 'All' ? categoryId : undefined,
         cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined
       };
@@ -453,7 +453,7 @@ export const LeadsPage: React.FC = () => {
           onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
           showCallerColumn={user?.role === 'admin'}
           currentPage={page}
-          pageSize={15}
+          pageSize={50}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
