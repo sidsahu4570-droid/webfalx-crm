@@ -32,6 +32,7 @@ export interface ILead extends Document {
   callerEmail: string;
   leadType: LeadType;
   isNewLead: boolean;
+  isPermanentInterested?: boolean;
   name: string;
   company: string;
   email: string;
@@ -93,6 +94,11 @@ const leadSchema = new Schema<ILead>(
       index: true
     },
     isNewLead: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    isPermanentInterested: {
       type: Boolean,
       default: false,
       index: true

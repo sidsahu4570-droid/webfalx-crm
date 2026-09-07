@@ -19,7 +19,8 @@ import {
   Edit2,
   Trash2,
   UserCheck,
-  PlusCircle
+  PlusCircle,
+  Star
 } from 'lucide-react';
 
 interface LeadCardProps {
@@ -29,6 +30,7 @@ interface LeadCardProps {
   onDeleteLead: (lead: Lead) => void;
   onQuickNote: (lead: Lead) => void;
   onCompleteFollowUp: (lead: Lead) => void;
+  onTogglePermanentInterested?: (lead: Lead) => void;
   showCallerInfo?: boolean;
 }
 
@@ -39,6 +41,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   onDeleteLead,
   onQuickNote,
   onCompleteFollowUp,
+  onTogglePermanentInterested,
   showCallerInfo = false
 }) => {
   const isDue = isFollowUpDue(lead.nextFollowUpDate);
@@ -70,6 +73,11 @@ export const LeadCard: React.FC<LeadCardProps> = ({
           </div>
 
           <div className="flex flex-col items-end space-y-1">
+            {lead.isPermanentInterested && (
+              <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs">
+                ⭐ Permanent Interested
+              </span>
+            )}
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border shadow-sm ${getStatusBadgeStyle(
                 lead.status
@@ -136,6 +144,19 @@ export const LeadCard: React.FC<LeadCardProps> = ({
         </button>
 
         <div className="flex items-center space-x-1">
+          {onTogglePermanentInterested && (
+            <button
+              onClick={() => onTogglePermanentInterested(lead)}
+              className={`p-1.5 rounded-lg transition-colors ${
+                lead.isPermanentInterested
+                  ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/50'
+                  : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+              }`}
+              title={lead.isPermanentInterested ? 'Remove Permanent Interested' : 'Mark as Permanent Interested'}
+            >
+              <Star className={`w-4 h-4 ${lead.isPermanentInterested ? 'fill-amber-400 text-amber-500' : ''}`} />
+            </button>
+          )}
           <button
             onClick={() => onCompleteFollowUp(lead)}
             className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors"

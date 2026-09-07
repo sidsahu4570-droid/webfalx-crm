@@ -32,7 +32,8 @@ import {
   CheckSquare,
   Square,
   Hash,
-  MessageCircle
+  MessageCircle,
+  Star
 } from 'lucide-react';
 import { exportLeadsToCSV } from '../../utils/csv';
 
@@ -45,6 +46,7 @@ interface LeadTableProps {
   onBulkAssignSuccess?: () => void;
   onQuickNote: (lead: Lead) => void;
   onCompleteFollowUp: (lead: Lead) => void;
+  onTogglePermanentInterested?: (lead: Lead) => void;
   showCallerColumn?: boolean;
   currentPage?: number;
   pageSize?: number;
@@ -59,6 +61,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
   onBulkAssignSuccess,
   onQuickNote,
   onCompleteFollowUp,
+  onTogglePermanentInterested,
   showCallerColumn = false,
   currentPage,
   pageSize
@@ -254,6 +257,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
               onDelete={() => onDeleteLead(lead)}
               onQuickNote={() => onQuickNote(lead)}
               onCompleteFollowUp={() => onCompleteFollowUp(lead)}
+              onTogglePermanentInterested={onTogglePermanentInterested ? () => onTogglePermanentInterested(lead) : undefined}
               onWhatsapp={lead.phone ? () => setWhatsappLead(lead) : undefined}
               showCallerInfo={showCallerColumn}
             />
@@ -357,6 +361,11 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                           </div>
                         )}
                         <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          {lead.isPermanentInterested && (
+                            <span className="inline-flex items-center text-[9px] bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.2 rounded font-extrabold">
+                              ⭐ Permanent Interested
+                            </span>
+                          )}
                           {lead.categoryName && (
                             <span className="inline-flex items-center text-[9px] bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 rounded font-semibold">
                               {lead.categoryName}
@@ -442,6 +451,19 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                   {/* Actions */}
                   <td className="py-4 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end space-x-1">
+                      {onTogglePermanentInterested && (
+                        <button
+                          onClick={() => onTogglePermanentInterested(lead)}
+                          title={lead.isPermanentInterested ? 'Remove Permanent Interested' : 'Mark as Permanent Interested'}
+                          className={`p-1.5 rounded-xl transition-all font-bold ${
+                            lead.isPermanentInterested
+                              ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/50'
+                              : 'text-slate-400 hover:text-amber-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <Star className={`w-4 h-4 ${lead.isPermanentInterested ? 'fill-amber-400 text-amber-500' : ''}`} />
+                        </button>
+                      )}
                       {lead.phone && (
                         <button
                           onClick={() => setWhatsappLead(lead)}

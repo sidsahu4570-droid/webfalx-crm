@@ -28,6 +28,7 @@ export const AdminLeadsPage: React.FC = () => {
   // Filters
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('All');
+  const [isPermanentInterestedFilter, setIsPermanentInterestedFilter] = useState('All');
   const [priority, setPriority] = useState('All');
   const [dueOnly, setDueOnly] = useState(false);
   const [callerId, setCallerId] = useState('');
@@ -78,6 +79,7 @@ export const AdminLeadsPage: React.FC = () => {
         isNewLead: false, // Strict segregation: only fetch active worked leads
         search,
         status: status !== 'All' ? status : undefined,
+        isPermanentInterested: isPermanentInterestedFilter === 'true' ? true : undefined,
         priority: priority !== 'All' ? priority : undefined,
         dueFollowUp: dueOnly ? true : undefined,
         callerId: callerId ? callerId : undefined,
@@ -102,7 +104,7 @@ export const AdminLeadsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, status, priority, dueOnly, callerId, toast, categoryId, cityIdsKey, sortBy, page]);
+  }, [search, status, isPermanentInterestedFilter, priority, dueOnly, callerId, toast, categoryId, cityIdsKey, sortBy, page]);
 
   // Reset to page 1 when any filter changes
   const isFirstRender = useRef(true);
@@ -112,7 +114,7 @@ export const AdminLeadsPage: React.FC = () => {
       return;
     }
     setPage(1);
-  }, [search, status, priority, dueOnly, callerId, categoryId, cityIdsKey, sortBy]);
+  }, [search, status, isPermanentInterestedFilter, priority, dueOnly, callerId, categoryId, cityIdsKey, sortBy]);
 
   useEffect(() => {
     fetchCallers();
@@ -126,6 +128,7 @@ export const AdminLeadsPage: React.FC = () => {
   const filtersRef = useRef({
     search,
     status,
+    isPermanentInterestedFilter,
     priority,
     dueOnly,
     callerId,
@@ -137,18 +140,24 @@ export const AdminLeadsPage: React.FC = () => {
     filtersRef.current = {
       search,
       status,
+      isPermanentInterestedFilter,
       priority,
       dueOnly,
       callerId,
       categoryId,
       selectedCityIds
     };
-  }, [search, status, priority, dueOnly, callerId, categoryId, selectedCityIds]);
+  }, [search, status, isPermanentInterestedFilter, priority, dueOnly, callerId, categoryId, selectedCityIds]);
 
   const checkLeadMatchesFilters = useCallback((lead: Lead, currentFilters: typeof filtersRef.current): boolean => {
+    // 0. Permanent Status Filter
+    if (currentFilters.isPermanentInterestedFilter === 'true' && !lead.isPermanentInterested) {
+      return false;
+    }
+
     // 1. Status
     if (currentFilters.status === 'All') {
-      if (lead.status === 'Not Interested' || lead.status === 'Closed' || lead.status === 'Not Picked') {
+      if (!lead.isPermanentInterested && (lead.status === 'Not Interested' || lead.status === 'Closed' || lead.status === 'Not Picked')) {
         return false;
       }
     } else if (lead.status !== currentFilters.status) {
@@ -312,6 +321,23 @@ export const AdminLeadsPage: React.FC = () => {
     }
   };
 
+  const handleTogglePermanentInterested = async (targetLead: Lead) => {
+    try {
+      const nextVal = !targetLead.isPermanentInterested;
+      const res = await leadService.updateLead(targetLead._id, { isPermanentInterested: nextVal });
+      if (res.success && res.lead) {
+        toast(
+          nextVal ? 'Permanent Interested Set' : 'Permanent Interested Removed',
+          nextVal ? `${targetLead.name} marked as Permanent Interested` : `Removed Permanent Interested flag from ${targetLead.name}`,
+          'success'
+        );
+        handleLeadUpdated(res.lead);
+      }
+    } catch (err: any) {
+      toast('Error', err.message || 'Failed to update permanent status', 'error');
+    }
+  };
+
   const handleConvertLead = (lead: Lead) => {
     setLeadToConvert(lead);
     setSelectedLead(null);
@@ -372,8 +398,11 @@ export const AdminLeadsPage: React.FC = () => {
             categoryId={categoryId}
             setCategoryId={(cat) => setCategoryId(cat)}
             categories={categories}
+            isPermanentInterested={isPermanentInterestedFilter}
+            setIsPermanentInterested={(val) => setIsPermanentInterestedFilter(val)}
             onReset={() => {
               setStatus('All');
+              setIsPermanentInterestedFilter('All');
               setPriority('All');
               setDueOnly(false);
               setCallerId('');
@@ -427,6 +456,7 @@ export const AdminLeadsPage: React.FC = () => {
             onBulkAssignSuccess={fetchAllLeads}
             onQuickNote={(l) => setSelectedLead(l)}
             onCompleteFollowUp={(l) => handleCompleteFollowUp(l._id)}
+            onTogglePermanentInterested={handleTogglePermanentInterested}
             showCallerColumn={true}
             currentPage={page}
             pageSize={50}
@@ -465,6 +495,7 @@ export const AdminLeadsPage: React.FC = () => {
         onAddNote={handleAddNote}
         onUpdateStatus={handleUpdateStatus}
         onCompleteFollowUp={handleCompleteFollowUp}
+        onTogglePermanentInterested={handleTogglePermanentInterested}
         onAssignLead={handleAssignLead}
         onConvertLead={handleConvertLead}
         callers={callers}

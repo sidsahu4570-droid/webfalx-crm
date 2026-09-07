@@ -24,7 +24,8 @@ import {
   MessageCircle,
   Tag,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Star
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { DirectCallButton } from '../common/DirectCallButton';
@@ -40,6 +41,7 @@ interface LeadDetailModalProps {
   ) => Promise<void>;
   onUpdateStatus: (leadId: string, status: LeadStatus) => Promise<void>;
   onCompleteFollowUp: (leadId: string, nextDate?: string) => Promise<void>;
+  onTogglePermanentInterested?: (lead: Lead) => void;
   onAssignLead?: (leadId: string, callerId: string) => Promise<void>;
   onConvertLead?: (lead: Lead) => void;
   callers?: User[];
@@ -52,6 +54,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   onAddNote,
   onUpdateStatus,
   onCompleteFollowUp,
+  onTogglePermanentInterested,
   onAssignLead,
   onConvertLead,
   callers = []
@@ -157,6 +160,11 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                   S. No. #{lead.serialNumber || 'N/A'}
                 </span>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">{lead.name}</h3>
+                {lead.isPermanentInterested && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 shadow-xs">
+                    ⭐ Permanent Interested
+                  </span>
+                )}
                 <span
                   className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border shadow-sm ${getStatusBadgeStyle(
                     lead.status
@@ -189,22 +197,38 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Status Dropdown */}
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-semibold text-slate-500">Update Status:</span>
-            <select
-              value={lead.status}
-              onChange={(e) => onUpdateStatus(lead._id, e.target.value as LeadStatus)}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="New">New</option>
-              <option value="Interested">Interested</option>
-              <option value="Follow-up">Follow-up</option>
-              <option value="Meeting Scheduled">Meeting Scheduled</option>
-              <option value="Converted">Converted</option>
-              <option value="Not Interested">Not Interested</option>
-              <option value="Closed">Closed</option>
-            </select>
+          {/* Quick Status & Permanent Interested Controls */}
+          <div className="flex flex-col items-end gap-2">
+            {onTogglePermanentInterested && (
+              <button
+                type="button"
+                onClick={() => onTogglePermanentInterested(lead)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold border flex items-center space-x-1.5 transition-all ${
+                  lead.isPermanentInterested
+                    ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-500/20'
+                    : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Star className={`w-3.5 h-3.5 ${lead.isPermanentInterested ? 'fill-amber-400 text-amber-500' : 'text-slate-400'}`} />
+                <span>{lead.isPermanentInterested ? 'Remove Permanent Interested' : 'Mark as Permanent Interested'}</span>
+              </button>
+            )}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs font-semibold text-slate-500">Update Status:</span>
+              <select
+                value={lead.status}
+                onChange={(e) => onUpdateStatus(lead._id, e.target.value as LeadStatus)}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="New">New</option>
+                <option value="Interested">Interested</option>
+                <option value="Follow-up">Follow-up</option>
+                <option value="Meeting Scheduled">Meeting Scheduled</option>
+                <option value="Converted">Converted</option>
+                <option value="Not Interested">Not Interested</option>
+                <option value="Closed">Closed</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -238,6 +262,13 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
 
           {/* Badges Stacked Vertically */}
           <div className="flex flex-col space-y-2 pt-0.5">
+            {lead.isPermanentInterested && (
+              <div className="flex">
+                <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                  ⭐ Permanent Interested
+                </span>
+              </div>
+            )}
             <div className="flex">
               <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${getStatusBadgeStyle(lead.status)}`}>
                 {lead.status}
@@ -263,6 +294,22 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Permanent Interested Button (Mobile) */}
+          {onTogglePermanentInterested && (
+            <button
+              type="button"
+              onClick={() => onTogglePermanentInterested(lead)}
+              className={`w-full py-2.5 rounded-xl text-xs font-bold border flex items-center justify-center space-x-1.5 transition-all ${
+                lead.isPermanentInterested
+                  ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700'
+                  : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+              }`}
+            >
+              <Star className={`w-4 h-4 ${lead.isPermanentInterested ? 'fill-amber-400 text-amber-500' : 'text-slate-400'}`} />
+              <span>{lead.isPermanentInterested ? 'Remove Permanent Interested' : 'Mark as Permanent Interested'}</span>
+            </button>
+          )}
 
           {/* Status Dropdown 100% Width */}
           <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 space-y-1.5">

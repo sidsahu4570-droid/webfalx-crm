@@ -50,6 +50,7 @@ export interface Lead {
   callerEmail: string;
   leadType?: LeadType;
   isNewLead?: boolean;
+  isPermanentInterested?: boolean;
   name: string;
   company: string;
   email: string;
@@ -74,6 +75,7 @@ export interface Lead {
 export interface FilterParams {
   status?: LeadStatus | string;
   priority?: LeadPriority | string;
+  isPermanentInterested?: boolean | string;
   search?: string;
   dueFollowUp?: boolean;
   isNewLead?: boolean;

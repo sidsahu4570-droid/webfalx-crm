@@ -21,7 +21,8 @@ import {
   CheckSquare,
   Square,
   MessageCircle,
-  User
+  User,
+  Star
 } from 'lucide-react';
 
 interface LeadCardMobileProps {
@@ -34,6 +35,7 @@ interface LeadCardMobileProps {
   onDelete: () => void;
   onQuickNote: () => void;
   onCompleteFollowUp: () => void;
+  onTogglePermanentInterested?: () => void;
   onWhatsapp?: () => void;
   showCallerInfo?: boolean;
 }
@@ -48,6 +50,7 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
   onDelete,
   onQuickNote,
   onCompleteFollowUp,
+  onTogglePermanentInterested,
   onWhatsapp,
   showCallerInfo = false
 }) => {
@@ -84,7 +87,12 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
         </div>
 
         {/* Small Status & Priority header badges */}
-        <div className="flex items-center space-x-1.5">
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          {lead.isPermanentInterested && (
+            <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+              ⭐ Permanent Interested
+            </span>
+          )}
           <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getStatusBadgeStyle(lead.status)}`}>
             {lead.status}
           </span>
@@ -198,6 +206,15 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
 
       {/* Action Buttons Grid */}
       <div className="pt-3 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-2" onClick={(e) => e.stopPropagation()}>
+        {onTogglePermanentInterested && (
+          <button
+            onClick={onTogglePermanentInterested}
+            className="col-span-2 w-full py-2 bg-amber-50 dark:bg-amber-950/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 font-bold rounded-xl flex items-center justify-center space-x-1.5 border border-amber-200 dark:border-amber-800 transition-all text-xs"
+          >
+            <Star className={`w-3.5 h-3.5 ${lead.isPermanentInterested ? 'fill-amber-400 text-amber-500' : ''}`} />
+            <span>{lead.isPermanentInterested ? 'Remove Permanent Interested' : 'Mark as Permanent Interested'}</span>
+          </button>
+        )}
         {lead.phone && onWhatsapp && (
           <button
             onClick={onWhatsapp}

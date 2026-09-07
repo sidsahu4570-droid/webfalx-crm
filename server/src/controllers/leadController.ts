@@ -18,6 +18,7 @@ export const getLeads = async (req: Request, res: Response) => {
       status,
       priority,
       isNewLead,
+      isPermanentInterested,
       leadType,
       dueFollowUp,
       callerId,
@@ -57,6 +58,10 @@ export const getLeads = async (req: Request, res: Response) => {
 
     // Construct query from totalProspectsQuery for currently showing results
     const query: any = { ...totalProspectsQuery };
+
+    if (isPermanentInterested === 'true') {
+      query.isPermanentInterested = true;
+    }
 
     if (categoryId && categoryId !== 'All') {
       if (Array.isArray(categoryId)) {
@@ -116,11 +121,14 @@ export const getLeads = async (req: Request, res: Response) => {
 
     // Status filter rules:
     // When status is explicitly specified and not 'All', filter by that status.
-    // When status is 'All' or not specified, exclude 'Not Interested', 'Closed', and 'Not Picked' by default.
+    // When status is 'All' or not specified, exclude 'Not Interested', 'Closed', and 'Not Picked' UNLESS permanent interested is true.
     if (status && status !== 'All') {
       query.status = status;
-    } else {
-      query.status = { $nin: ['Not Interested', 'Closed', 'Not Picked'] };
+    } else if (isPermanentInterested !== 'true') {
+      query.$or = [
+        { isPermanentInterested: true },
+        { status: { $nin: ['Not Interested', 'Closed', 'Not Picked'] } }
+      ];
     }
 
     // Sorting
@@ -419,6 +427,7 @@ export const updateLead = async (req: Request, res: Response) => {
       source,
       status,
       priority,
+      isPermanentInterested,
       nextFollowUpDate,
       categoryId,
       cityId
@@ -434,6 +443,26 @@ export const updateLead = async (req: Request, res: Response) => {
     }
 
     const previousStatus = lead.status;
+
+    if (typeof isPermanentInterested === 'boolean') {
+      const prevPerm = lead.isPermanentInterested || false;
+      if (prevPerm !== isPermanentInterested) {
+        lead.isPermanentInterested = isPermanentInterested;
+        const detailMsg = isPermanentInterested
+          ? `Marked prospect ${lead.name} as Permanent Interested`
+          : `Removed Permanent Interested status from prospect ${lead.name}`;
+        lead.latestUpdate = detailMsg;
+        await logActivity({
+          userId: user.id,
+          userName: user.name,
+          userEmail: user.email,
+          action: 'STATUS_CHANGE',
+          leadId: lead._id.toString(),
+          leadName: lead.name,
+          details: detailMsg
+        });
+      }
+    }
 
     if (serialNumber !== undefined) lead.serialNumber = Number(serialNumber);
     if (name) lead.name = name;
