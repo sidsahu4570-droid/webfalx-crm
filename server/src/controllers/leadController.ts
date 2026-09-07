@@ -34,27 +34,7 @@ export const getLeads = async (req: Request, res: Response) => {
 
     const totalProspectsQuery: any = {};
 
-    if (categoryId && categoryId !== 'All') {
-      if (Array.isArray(categoryId)) {
-        totalProspectsQuery.categoryId = { $in: categoryId };
-      } else if (typeof categoryId === 'string' && categoryId.includes(',')) {
-        totalProspectsQuery.categoryId = { $in: categoryId.split(',') };
-      } else {
-        totalProspectsQuery.categoryId = categoryId;
-      }
-    }
-
-    if (cityId && cityId !== 'All') {
-      if (Array.isArray(cityId)) {
-        totalProspectsQuery.cityId = { $in: cityId };
-      } else if (typeof cityId === 'string' && cityId.includes(',')) {
-        totalProspectsQuery.cityId = { $in: cityId.split(',') };
-      } else {
-        totalProspectsQuery.cityId = cityId;
-      }
-    }
-
-    // Enforce role-based scoping
+    // Enforce role-based scoping for total prospect count
     if (user.role === 'caller') {
       totalProspectsQuery.userId = user.id;
     } else if (user.role === 'admin' && callerId) {
@@ -75,30 +55,53 @@ export const getLeads = async (req: Request, res: Response) => {
       totalProspectsQuery.leadType = leadType;
     }
 
+    // Construct query from totalProspectsQuery for currently showing results
+    const query: any = { ...totalProspectsQuery };
+
+    if (categoryId && categoryId !== 'All') {
+      if (Array.isArray(categoryId)) {
+        query.categoryId = { $in: categoryId };
+      } else if (typeof categoryId === 'string' && categoryId.includes(',')) {
+        query.categoryId = { $in: categoryId.split(',') };
+      } else {
+        query.categoryId = categoryId;
+      }
+    }
+
+    if (cityId && cityId !== 'All') {
+      if (Array.isArray(cityId)) {
+        query.cityId = { $in: cityId };
+      } else if (typeof cityId === 'string' && cityId.includes(',')) {
+        query.cityId = { $in: cityId.split(',') };
+      } else {
+        query.cityId = cityId;
+      }
+    }
+
     // Priority filter
     if (priority && priority !== 'All') {
-      totalProspectsQuery.priority = priority;
+      query.priority = priority;
     }
 
     // Due Follow-up filter
     if (dueFollowUp === 'true') {
-      totalProspectsQuery.nextFollowUpDate = { $lte: new Date() };
+      query.nextFollowUpDate = { $lte: new Date() };
     }
 
     // Serial Number Filter
     if (serialNumber) {
-      totalProspectsQuery.serialNumber = Number(serialNumber);
+      query.serialNumber = Number(serialNumber);
     } else if (serialNumberStart || serialNumberEnd) {
-      totalProspectsQuery.serialNumber = {};
-      if (serialNumberStart) totalProspectsQuery.serialNumber.$gte = Number(serialNumberStart);
-      if (serialNumberEnd) totalProspectsQuery.serialNumber.$lte = Number(serialNumberEnd);
+      query.serialNumber = {};
+      if (serialNumberStart) query.serialNumber.$gte = Number(serialNumberStart);
+      if (serialNumberEnd) query.serialNumber.$lte = Number(serialNumberEnd);
     }
 
     // Search query (Supports Serial Number, Name, Company, Email, Phone)
     if (search && typeof search === 'string' && search.trim() !== '') {
       const term = search.trim();
       const searchRegex = new RegExp(term, 'i');
-      totalProspectsQuery.$or = [
+      query.$or = [
         { name: searchRegex },
         { company: searchRegex },
         { email: searchRegex },
@@ -107,12 +110,9 @@ export const getLeads = async (req: Request, res: Response) => {
 
       // If search string is numeric, also include exact serial number match
       if (!isNaN(Number(term))) {
-        totalProspectsQuery.$or.push({ serialNumber: Number(term) });
+        query.$or.push({ serialNumber: Number(term) });
       }
     }
-
-    // Construct query from totalProspectsQuery with Status rules applied
-    const query: any = { ...totalProspectsQuery };
 
     // Status filter rules:
     // When status is explicitly specified and not 'All', filter by that status.

@@ -345,11 +345,8 @@ export const AdminLeadsPage: React.FC = () => {
           <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Cross-Caller Lead Oversight & Reassignment
           </h2>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
-            <span>Admin view of all call team prospects</span>
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/70 shadow-sm">
-              Total Prospects: {totalProspects.toLocaleString()} | Showing: {totalLeads.toLocaleString()}
-            </span>
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+            Admin view of all call team prospects ({totalProspects.toLocaleString()} total prospects • {totalLeads.toLocaleString()} showing)
           </p>
         </div>
       </div>
