@@ -32,78 +32,73 @@ export const getLeads = async (req: Request, res: Response) => {
       cityId
     } = req.query;
 
-    const query: any = {};
+    const totalProspectsQuery: any = {};
 
     if (categoryId && categoryId !== 'All') {
       if (Array.isArray(categoryId)) {
-        query.categoryId = { $in: categoryId };
+        totalProspectsQuery.categoryId = { $in: categoryId };
       } else if (typeof categoryId === 'string' && categoryId.includes(',')) {
-        query.categoryId = { $in: categoryId.split(',') };
+        totalProspectsQuery.categoryId = { $in: categoryId.split(',') };
       } else {
-        query.categoryId = categoryId;
+        totalProspectsQuery.categoryId = categoryId;
       }
     }
 
     if (cityId && cityId !== 'All') {
       if (Array.isArray(cityId)) {
-        query.cityId = { $in: cityId };
+        totalProspectsQuery.cityId = { $in: cityId };
       } else if (typeof cityId === 'string' && cityId.includes(',')) {
-        query.cityId = { $in: cityId.split(',') };
+        totalProspectsQuery.cityId = { $in: cityId.split(',') };
       } else {
-        query.cityId = cityId;
+        totalProspectsQuery.cityId = cityId;
       }
     }
 
     // Enforce role-based scoping
     if (user.role === 'caller') {
-      query.userId = user.id;
+      totalProspectsQuery.userId = user.id;
     } else if (user.role === 'admin' && callerId) {
-      query.userId = callerId;
+      totalProspectsQuery.userId = callerId;
     }
 
     // Strict Segregation Rule:
     if (isNewLead === 'true') {
-      query.isNewLead = true;
+      totalProspectsQuery.isNewLead = true;
     } else if (isNewLead === 'all') {
       // Explicit admin request for all leads
     } else {
-      query.isNewLead = false;
+      totalProspectsQuery.isNewLead = false;
     }
 
     // Lead Type filter
     if (leadType && leadType !== 'All') {
-      query.leadType = leadType;
-    }
-
-    // Status filter
-    if (status && status !== 'All') {
-      query.status = status;
+      totalProspectsQuery.leadType = leadType;
     }
 
     // Priority filter
     if (priority && priority !== 'All') {
-      query.priority = priority;
+      totalProspectsQuery.priority = priority;
     }
 
     // Due Follow-up filter
     if (dueFollowUp === 'true') {
-      query.nextFollowUpDate = { $lte: new Date() };
+      totalProspectsQuery.nextFollowUpDate = { $lte: new Date() };
     }
 
     // Serial Number Filter
     if (serialNumber) {
-      query.serialNumber = Number(serialNumber);
+      totalProspectsQuery.serialNumber = Number(serialNumber);
     } else if (serialNumberStart || serialNumberEnd) {
-      query.serialNumber = {};
-      if (serialNumberStart) query.serialNumber.$gte = Number(serialNumberStart);
-      if (serialNumberEnd) query.serialNumber.$lte = Number(serialNumberEnd);
+      totalProspectsQuery.serialNumber = {};
+      if (serialNumberStart) totalProspectsQuery.serialNumber.$gte = Number(serialNumberStart);
+      if (serialNumberEnd) totalProspectsQuery.serialNumber.$lte = Number(serialNumberEnd);
     }
 
     // Search query (Supports Serial Number, Name, Company, Email, Phone)
     if (search && typeof search === 'string' && search.trim() !== '') {
       const term = search.trim();
       const searchRegex = new RegExp(term, 'i');
-      query.$or = [
+      totalProspectsQuery.$or = [
         { name: searchRegex },
         { company: searchRegex },
         { email: searchRegex },
@@ -112,8 +107,20 @@ export const getLeads = async (req: Request, res: Response) => {
 
       // If search string is numeric, also include exact serial number match
       if (!isNaN(Number(term))) {
-        query.$or.push({ serialNumber: Number(term) });
+        totalProspectsQuery.$or.push({ serialNumber: Number(term) });
       }
+    }
+
+    // Construct query from totalProspectsQuery with Status rules applied
+    const query: any = { ...totalProspectsQuery };
+
+    // Status filter rules:
+    // When status is explicitly specified and not 'All', filter by that status.
+    // When status is 'All' or not specified, exclude 'Not Interested' and 'Closed' by default.
+    if (status && status !== 'All') {
+      query.status = status;
+    } else {
+      query.status = { $nin: ['Not Interested', 'Closed'] };
     }
 
     // Sorting
@@ -146,10 +153,14 @@ export const getLeads = async (req: Request, res: Response) => {
       sortOptions = { callerName: 1 };
     } else if (sortBy === 'callerDesc') {
       sortOptions = { callerName: -1 };
+    } else if (sortBy === 'priorityHighToLow') {
+      sortOptions = { priorityWeight: -1, updatedAt: -1 };
+    } else if (sortBy === 'priorityLowToHigh') {
+      sortOptions = { priorityWeight: 1, updatedAt: -1 };
     }
 
-    const pageNum = parseInt(page as string, 10) || 1;
-    const limitNum = parseInt(limit as string, 10) || 50;
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 50;
     const skip = (pageNum - 1) * limitNum;
 
     let leadsPromise: Promise<any>;
@@ -218,8 +229,9 @@ export const getLeads = async (req: Request, res: Response) => {
         .exec();
     }
 
-    const [totalLeads, leads] = await Promise.all([
+    const [totalLeads, totalProspectsCount, leads] = await Promise.all([
       Lead.countDocuments(query),
+      Lead.countDocuments(totalProspectsQuery),
       leadsPromise
     ]);
 
@@ -228,6 +240,7 @@ export const getLeads = async (req: Request, res: Response) => {
       leads,
       pagination: {
         total: totalLeads,
+        totalProspects: totalProspectsCount,
         page: pageNum,
         pages: Math.ceil(totalLeads / limitNum) || 1,
         limit: limitNum

@@ -42,6 +42,7 @@ export const AdminLeadsPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalLeads, setTotalLeads] = useState(0);
+  const [totalProspects, setTotalProspects] = useState(0);
 
   // Convert Lead -> Converted Client flow
   const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
@@ -93,6 +94,7 @@ export const AdminLeadsPage: React.FC = () => {
         setLeads(res.leads);
         setTotalPages(res.pagination?.pages || 1);
         setTotalLeads(res.pagination?.total || 0);
+        setTotalProspects(res.pagination?.totalProspects ?? res.pagination?.total ?? 0);
       }
     } catch (err: any) {
       console.error('AdminLeadsPage fetch error:', err);
@@ -145,7 +147,11 @@ export const AdminLeadsPage: React.FC = () => {
 
   const checkLeadMatchesFilters = useCallback((lead: Lead, currentFilters: typeof filtersRef.current): boolean => {
     // 1. Status
-    if (currentFilters.status !== 'All' && lead.status !== currentFilters.status) {
+    if (currentFilters.status === 'All') {
+      if (lead.status === 'Not Interested' || lead.status === 'Closed') {
+        return false;
+      }
+    } else if (lead.status !== currentFilters.status) {
       return false;
     }
 
@@ -339,8 +345,11 @@ export const AdminLeadsPage: React.FC = () => {
           <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Cross-Caller Lead Oversight & Reassignment
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Admin view of all call team prospects ({totalLeads.toLocaleString()} Prospects shown)
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+            <span>Admin view of all call team prospects</span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/70 shadow-sm">
+              Total Prospects: {totalProspects.toLocaleString()} | Showing: {totalLeads.toLocaleString()}
+            </span>
           </p>
         </div>
       </div>

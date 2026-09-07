@@ -111,6 +111,7 @@ export interface PaginatedResponse<T> {
   leads: T[];
   pagination: {
     total: number;
+    totalProspects?: number;
     page: number;
     pages: number;
     limit: number;

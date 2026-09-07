@@ -60,6 +60,7 @@ export const LeadsPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalLeads, setTotalLeads] = useState(0);
+  const [totalProspects, setTotalProspects] = useState(0);
 
   // Category filter states
   const [categoryId, setCategoryId] = useState('All');
@@ -126,6 +127,7 @@ export const LeadsPage: React.FC = () => {
         setLeads(res.leads);
         setTotalPages(res.pagination.pages);
         setTotalLeads(res.pagination.total);
+        setTotalProspects(res.pagination.totalProspects ?? res.pagination.total);
       }
     } catch (err: any) {
       toast('Error Loading Leads', err.message || 'Failed to fetch prospects', 'error');
@@ -167,7 +169,11 @@ export const LeadsPage: React.FC = () => {
 
   const checkLeadMatchesFilters = useCallback((lead: Lead, currentFilters: typeof filtersRef.current): boolean => {
     // 1. Status
-    if (currentFilters.status !== 'All' && lead.status !== currentFilters.status) {
+    if (currentFilters.status === 'All') {
+      if (lead.status === 'Not Interested' || lead.status === 'Closed') {
+        return false;
+      }
+    } else if (lead.status !== currentFilters.status) {
       return false;
     }
 
@@ -437,8 +443,11 @@ export const LeadsPage: React.FC = () => {
           <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Prospect Pipeline & Lead Queue
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Manage your leads, log call notes, and schedule follow-ups ({totalLeads} total prospects)
+          <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+            <span>Manage your leads, log call notes, and schedule follow-ups</span>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/70 dark:text-indigo-300 border border-indigo-200/70 dark:border-indigo-800/70 shadow-sm">
+              Total Prospects: {totalProspects.toLocaleString()} | Showing: {totalLeads.toLocaleString()}
+            </span>
           </p>
         </div>
 
