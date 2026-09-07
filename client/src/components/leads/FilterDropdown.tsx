@@ -30,7 +30,7 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
   callerId,
   setCallerId,
   callers = [],
-  sortBy = 'updatedAt',
+  sortBy = 'recentlyUpdated',
   setSortBy,
   categoryId,
   setCategoryId,
@@ -134,7 +134,8 @@ export const FilterDropdown: React.FC<FilterDropdownProps> = ({
           onChange={(e) => setSortBy(e.target.value)}
           className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
         >
-          <option value="updatedAt">Sort: Recently Updated</option>
+          <option value="recentlyUpdated">Sort: Recently Updated</option>
+          <option value="oldestUpdated">Sort: Oldest Updated</option>
           <option value="newest">Sort: Newest First</option>
           <option value="nextFollowUp">Sort: Next Follow-up</option>
           <option value="name">Sort: Prospect Name</option>

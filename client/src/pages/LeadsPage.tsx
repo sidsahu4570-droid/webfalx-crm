@@ -43,12 +43,20 @@ export const LeadsPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
 
   // Filters & Search
+  const userHasChangedSortRef = useRef(false);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('All');
   const [priority, setPriority] = useState('All');
   const [dueOnly, setDueOnly] = useState(false);
   const [callerId, setCallerId] = useState('');
-  const [sortBy, setSortBy] = useState('updatedAt');
+  const [sortBy, setSortBy] = useState<string>(() => (user?.role === 'caller' ? 'oldestUpdated' : 'recentlyUpdated'));
+
+  useEffect(() => {
+    if (!userHasChangedSortRef.current && user?.role) {
+      setSortBy(user.role === 'caller' ? 'oldestUpdated' : 'recentlyUpdated');
+    }
+  }, [user?.role]);
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalLeads, setTotalLeads] = useState(0);
@@ -513,7 +521,11 @@ export const LeadsPage: React.FC = () => {
             setCallerId={(c) => { setCallerId(c); setPage(1); }}
             callers={callers}
             sortBy={sortBy}
-            setSortBy={(sort) => { setSortBy(sort); setPage(1); }}
+            setSortBy={(sort) => {
+              userHasChangedSortRef.current = true;
+              setSortBy(sort);
+              setPage(1);
+            }}
             categoryId={categoryId}
             setCategoryId={(cat) => { setCategoryId(cat); setPage(1); }}
             categories={categories}
@@ -525,6 +537,8 @@ export const LeadsPage: React.FC = () => {
               setCategoryId('All');
               setSelectedCityIds([]);
               setSearch('');
+              userHasChangedSortRef.current = false;
+              setSortBy(user?.role === 'caller' ? 'oldestUpdated' : 'recentlyUpdated');
               setPage(1);
             }}
           />
