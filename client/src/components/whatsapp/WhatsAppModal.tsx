@@ -168,19 +168,30 @@ export const WhatsAppModal: React.FC<WhatsAppModalProps> = ({
     }
   };
 
-  const handleSendWhatsApp = (e: React.FormEvent) => {
+  const handleSendWhatsApp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customMessage.trim()) return;
 
     try {
-      // Launch WhatsApp Web / App directly
-      const waUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(customMessage)}`;
-      window.open(waUrl, '_blank');
+      const tmpl = TEMPLATES.find((t) => t.id === selectedTemplate);
+      await whatsAppService
+        .logMessage({
+          leadId,
+          clientId,
+          phone: normalizedPhone,
+          message: customMessage,
+          templateName: tmpl ? tmpl.title : selectedTemplate,
+          status: 'sent'
+        })
+        .catch(() => {});
 
       if (onLogSaved) onLogSaved();
-      onClose();
+
+      // Launch WhatsApp Web / App directly in the CURRENT browser tab
+      const waUrl = `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(customMessage)}`;
+      window.location.href = waUrl;
     } catch (err: any) {
-      toast('Error', err.message, 'error');
+      toast('Error', err.message || 'Failed to open WhatsApp', 'error');
     }
   };
 
