@@ -93,6 +93,9 @@ export const LeadsPage: React.FC = () => {
     });
   }, []);
 
+  const cityIdsKey = selectedCityIds.join(',');
+  const userRole = user?.role;
+
   const fetchLeads = useCallback(async () => {
     setLoading(true);
     try {
@@ -102,12 +105,12 @@ export const LeadsPage: React.FC = () => {
         status: status !== 'All' ? status : undefined,
         priority: priority !== 'All' ? priority : undefined,
         dueFollowUp: dueOnly ? true : undefined,
-        callerId: user?.role === 'admin' && callerId ? callerId : undefined,
+        callerId: userRole === 'admin' && callerId ? callerId : undefined,
         sortBy,
         page,
         limit: 50,
         categoryId: categoryId !== 'All' ? categoryId : undefined,
-        cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined
+        cityId: cityIdsKey ? cityIdsKey : undefined
       };
 
       const res = await leadService.getLeads(params);
@@ -121,7 +124,7 @@ export const LeadsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, status, priority, dueOnly, callerId, sortBy, page, user, toast, categoryId, selectedCityIds]);
+  }, [search, status, priority, dueOnly, callerId, sortBy, page, userRole, toast, categoryId, cityIdsKey]);
 
   useEffect(() => {
     fetchLeads();

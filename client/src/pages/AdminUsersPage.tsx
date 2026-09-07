@@ -32,7 +32,7 @@ export const AdminUsersPage: React.FC = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await userService.getUsers();
+      const res = await userService.getUsers(true);
       if (res.success) setUsers(res.users);
     } catch (err: any) {
       toast('Error Loading Users', err.message, 'error');

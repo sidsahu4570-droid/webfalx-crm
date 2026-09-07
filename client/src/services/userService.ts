@@ -2,8 +2,8 @@ import { api } from './api';
 import { User } from '../types';
 
 export const userService = {
-  getUsers: async (): Promise<{ success: boolean; users: User[] }> => {
-    const res = await api.get<{ success: boolean; users: User[] }>('/users');
+  getUsers: async (includeStats?: boolean): Promise<{ success: boolean; users: User[] }> => {
+    const res = await api.get<{ success: boolean; users: User[] }>(`/users${includeStats ? '?includeStats=true' : ''}`);
     return res.data;
   },
 

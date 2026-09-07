@@ -199,4 +199,18 @@ leadSchema.index({ createdAt: -1 });
 leadSchema.index({ company: 1 });
 leadSchema.index({ callerName: 1 });
 
+// High-performance compound indexes covering pagination & sorting
+leadSchema.index({ isNewLead: 1, updatedAt: -1 });
+leadSchema.index({ userId: 1, isNewLead: 1, updatedAt: -1 });
+leadSchema.index({ isNewLead: 1, status: 1, updatedAt: -1 });
+leadSchema.index({ userId: 1, isNewLead: 1, status: 1, updatedAt: -1 });
+leadSchema.index({ isNewLead: 1, priority: 1, updatedAt: -1 });
+leadSchema.index({ userId: 1, isNewLead: 1, priority: 1, updatedAt: -1 });
+leadSchema.index({ isNewLead: 1, nextFollowUpDate: 1 });
+leadSchema.index({ userId: 1, isNewLead: 1, nextFollowUpDate: 1 });
+leadSchema.index({ isNewLead: 1, cityId: 1, updatedAt: -1 });
+leadSchema.index({ isNewLead: 1, categoryId: 1, updatedAt: -1 });
+leadSchema.index({ isNewLead: 1, createdAt: -1 });
+leadSchema.index({ userId: 1, isNewLead: 1, createdAt: -1 });
+
 export const Lead = model<ILead>('Lead', leadSchema);

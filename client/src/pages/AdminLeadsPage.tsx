@@ -68,6 +68,8 @@ export const AdminLeadsPage: React.FC = () => {
     } catch (e) {}
   };
 
+  const cityIdsKey = selectedCityIds.join(',');
+
   const fetchAllLeads = useCallback(async () => {
     setLoading(true);
     try {
@@ -80,7 +82,7 @@ export const AdminLeadsPage: React.FC = () => {
         callerId: callerId ? callerId : undefined,
         limit: 50,
         categoryId: categoryId !== 'All' ? categoryId : undefined,
-        cityId: selectedCityIds.length > 0 ? selectedCityIds.join(',') : undefined,
+        cityId: cityIdsKey ? cityIdsKey : undefined,
         sortBy,
         page
       };
@@ -98,15 +100,23 @@ export const AdminLeadsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, status, priority, dueOnly, callerId, toast, categoryId, selectedCityIds, sortBy, page]);
+  }, [search, status, priority, dueOnly, callerId, toast, categoryId, cityIdsKey, sortBy, page]);
 
   // Reset to page 1 when any filter changes
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setPage(1);
-  }, [search, status, priority, dueOnly, callerId, categoryId, selectedCityIds, sortBy]);
+  }, [search, status, priority, dueOnly, callerId, categoryId, cityIdsKey, sortBy]);
 
   useEffect(() => {
     fetchCallers();
+  }, []);
+
+  useEffect(() => {
     fetchAllLeads();
   }, [fetchAllLeads]);
 

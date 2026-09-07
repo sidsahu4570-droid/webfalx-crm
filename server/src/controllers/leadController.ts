@@ -152,12 +152,11 @@ export const getLeads = async (req: Request, res: Response) => {
     const limitNum = parseInt(limit as string, 10) || 50;
     const skip = (pageNum - 1) * limitNum;
 
-    const totalLeads = await Lead.countDocuments(query);
-    let leads;
+    let leadsPromise: Promise<any>;
 
     if (sortBy === 'priorityHighToLow' || sortBy === 'priorityLowToHigh') {
       const priorityOrder = sortBy === 'priorityHighToLow' ? -1 : 1;
-      leads = await Lead.aggregate([
+      leadsPromise = Lead.aggregate([
         { $match: query },
         {
           $addFields: {
@@ -176,10 +175,10 @@ export const getLeads = async (req: Request, res: Response) => {
         { $sort: { priorityWeight: priorityOrder, updatedAt: -1 } },
         { $skip: skip },
         { $limit: limitNum }
-      ]);
+      ]).exec();
     } else if (sortBy === 'latestFollowUp' || sortBy === 'oldestFollowUp') {
       const now = new Date();
-      leads = await Lead.aggregate([
+      leadsPromise = Lead.aggregate([
         { $match: query },
         {
           $addFields: {
@@ -208,13 +207,21 @@ export const getLeads = async (req: Request, res: Response) => {
         { $sort: { followUpWeight: 1, nextFollowUpDate: 1, updatedAt: -1 } },
         { $skip: skip },
         { $limit: limitNum }
-      ]);
+      ]).exec();
     } else {
-      leads = await Lead.find(query)
+      leadsPromise = Lead.find(query)
         .sort(sortOptions)
         .skip(skip)
-        .limit(limitNum);
+        .limit(limitNum)
+        .select({ notes: { $slice: 20 } })
+        .lean()
+        .exec();
     }
+
+    const [totalLeads, leads] = await Promise.all([
+      Lead.countDocuments(query),
+      leadsPromise
+    ]);
 
     res.json({
       success: true,

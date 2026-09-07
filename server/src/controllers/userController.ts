@@ -7,31 +7,63 @@ export const getUsers = async (req: Request, res: Response) => {
   try {
     const users = await User.find({}).sort({ createdAt: -1 });
 
-    // Attach lead counts per user
-    const usersWithStats = await Promise.all(
-      users.map(async (u) => {
-        const leadCount = await Lead.countDocuments({ userId: u._id });
-        const dueFollowUps = await Lead.countDocuments({
-          userId: u._id,
-          nextFollowUpDate: { $lte: new Date() }
-        });
+    const includeStats = req.query.includeStats === 'true';
 
-        return {
-          id: u._id,
-          name: u.name,
-          email: u.email,
-          role: u.role,
-          isActive: u.isActive,
-          joiningDate: u.joiningDate,
-          joiningDateStatus: u.joiningDateStatus || 'Pending Approval',
-          joiningDateSubmittedAt: u.joiningDateSubmittedAt,
-          joiningDateApprovedBy: u.joiningDateApprovedBy,
-          leadCount,
-          dueFollowUps,
-          createdAt: u.createdAt
-        };
-      })
-    );
+    if (!includeStats) {
+      const formattedUsers = users.map((u) => ({
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        isActive: u.isActive,
+        joiningDate: u.joiningDate,
+        joiningDateStatus: u.joiningDateStatus || 'Pending Approval',
+        joiningDateSubmittedAt: u.joiningDateSubmittedAt,
+        joiningDateApprovedBy: u.joiningDateApprovedBy,
+        createdAt: u.createdAt
+      }));
+      return res.json({ success: true, users: formattedUsers });
+    }
+
+    // Attach lead counts per user efficiently using aggregation
+    const [leadCounts, dueCounts] = await Promise.all([
+      Lead.aggregate([
+        { $match: { userId: { $ne: null } } },
+        { $group: { _id: '$userId', count: { $sum: 1 } } }
+      ]),
+      Lead.aggregate([
+        { $match: { userId: { $ne: null }, nextFollowUpDate: { $lte: new Date() } } },
+        { $group: { _id: '$userId', count: { $sum: 1 } } }
+      ])
+    ]);
+
+    const leadCountMap = new Map<string, number>();
+    leadCounts.forEach((item) => {
+      if (item._id) leadCountMap.set(item._id.toString(), item.count);
+    });
+
+    const dueCountMap = new Map<string, number>();
+    dueCounts.forEach((item) => {
+      if (item._id) dueCountMap.set(item._id.toString(), item.count);
+    });
+
+    const usersWithStats = users.map((u) => {
+      const uIdStr = u._id.toString();
+      return {
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        isActive: u.isActive,
+        joiningDate: u.joiningDate,
+        joiningDateStatus: u.joiningDateStatus || 'Pending Approval',
+        joiningDateSubmittedAt: u.joiningDateSubmittedAt,
+        joiningDateApprovedBy: u.joiningDateApprovedBy,
+        leadCount: leadCountMap.get(uIdStr) || 0,
+        dueFollowUps: dueCountMap.get(uIdStr) || 0,
+        createdAt: u.createdAt
+      };
+    });
 
     res.json({ success: true, users: usersWithStats });
   } catch (error: any) {

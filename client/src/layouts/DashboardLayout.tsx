@@ -20,12 +20,12 @@ export const DashboardLayout: React.FC = () => {
   const [savingLead, setSavingLead] = useState(false);
 
   useEffect(() => {
-    if (user?.role === 'admin') {
+    if (addModalOpen && user?.role === 'admin' && callers.length === 0) {
       userService.getUsers().then((res) => {
         if (res.success) setCallers(res.users);
       });
     }
-  }, [user]);
+  }, [addModalOpen, user, callers.length]);
 
   // Real-time Socket Event Listeners for Toast Alerts
   useEffect(() => {
