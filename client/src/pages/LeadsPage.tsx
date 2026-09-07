@@ -395,8 +395,14 @@ export const LeadsPage: React.FC = () => {
   };
 
   const handleTogglePermanentInterested = async (targetLead: Lead) => {
+    const nextVal = !targetLead.isPermanentInterested;
+    const optimisticLead = { ...targetLead, isPermanentInterested: nextVal };
+
+    // 1. Optimistically update local UI state immediately
+    handleLeadUpdated(optimisticLead);
+
     try {
-      const nextVal = !targetLead.isPermanentInterested;
+      // 2. Perform backend update in the background
       const res = await leadService.updateLead(targetLead._id, { isPermanentInterested: nextVal });
       if (res.success && res.lead) {
         toast(
@@ -405,9 +411,15 @@ export const LeadsPage: React.FC = () => {
           'success'
         );
         handleLeadUpdated(res.lead);
+      } else {
+        // Revert on failure
+        handleLeadUpdated(targetLead);
+        toast('Error', 'Failed to update permanent status', 'error');
       }
     } catch (err: any) {
-      toast('Error', err.message || 'Failed to update permanent status', 'error');
+      // Revert on network/server error
+      handleLeadUpdated(targetLead);
+      toast('Error', err.response?.data?.message || err.message || 'Failed to update permanent status', 'error');
     }
   };
 
