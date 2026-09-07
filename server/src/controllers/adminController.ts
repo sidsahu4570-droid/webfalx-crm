@@ -206,6 +206,7 @@ export const assignLead = async (req: Request, res: Response) => {
     }
 
     const oldCallerName = lead.callerName;
+    const oldCallerId = lead.userId ? lead.userId.toString() : null;
 
     lead.userId = targetCaller._id as any;
     lead.callerName = targetCaller.name;
@@ -226,6 +227,11 @@ export const assignLead = async (req: Request, res: Response) => {
 
     emitToUser(targetCaller._id.toString(), 'lead_assigned', lead);
     emitToAdmin('lead_assigned', lead);
+    emitToUser(targetCaller._id.toString(), 'lead_updated', lead);
+    emitToAdmin('lead_updated', lead);
+    if (oldCallerId && oldCallerId !== targetCaller._id.toString()) {
+      emitToUser(oldCallerId, 'lead_updated', lead);
+    }
 
     res.json({
       success: true,

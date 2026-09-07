@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { leadService } from '../services/leadService';
 import { userService } from '../services/userService';
 import { adminService } from '../services/adminService';
@@ -15,6 +15,7 @@ import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import { categoryService } from '../services/categoryService';
 import { cityService } from '../services/cityService';
+import { isFollowUpDue } from '../utils/formatters';
 import { Layers, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const AdminLeadsPage: React.FC = () => {
@@ -109,20 +110,121 @@ export const AdminLeadsPage: React.FC = () => {
     fetchAllLeads();
   }, [fetchAllLeads]);
 
+  // Track active filter values in a ref for stable access inside handleLeadUpdated
+  const filtersRef = useRef({
+    search,
+    status,
+    priority,
+    dueOnly,
+    callerId,
+    categoryId,
+    selectedCityIds
+  });
+
+  useEffect(() => {
+    filtersRef.current = {
+      search,
+      status,
+      priority,
+      dueOnly,
+      callerId,
+      categoryId,
+      selectedCityIds
+    };
+  }, [search, status, priority, dueOnly, callerId, categoryId, selectedCityIds]);
+
+  const checkLeadMatchesFilters = useCallback((lead: Lead, currentFilters: typeof filtersRef.current): boolean => {
+    // 1. Status
+    if (currentFilters.status !== 'All' && lead.status !== currentFilters.status) {
+      return false;
+    }
+
+    // 2. Priority
+    if (currentFilters.priority !== 'All' && lead.priority !== currentFilters.priority) {
+      return false;
+    }
+
+    // 3. Due Follow-ups
+    if (currentFilters.dueOnly) {
+      if (!lead.nextFollowUpDate || !isFollowUpDue(lead.nextFollowUpDate)) {
+        return false;
+      }
+    }
+
+    // 4. Caller
+    if (currentFilters.callerId) {
+      const leadUserId = typeof lead.userId === 'object' && lead.userId ? (lead.userId as any)._id : lead.userId;
+      if (leadUserId && leadUserId.toString() !== currentFilters.callerId.toString()) {
+        return false;
+      }
+    }
+
+    // 5. Category
+    if (currentFilters.categoryId !== 'All') {
+      const leadCatId = typeof lead.categoryId === 'object' && lead.categoryId ? (lead.categoryId as any)._id : lead.categoryId;
+      if (leadCatId && leadCatId.toString() !== currentFilters.categoryId.toString()) {
+        return false;
+      }
+    }
+
+    // 6. City
+    if (currentFilters.selectedCityIds.length > 0) {
+      const leadCityId = typeof lead.cityId === 'object' && lead.cityId ? (lead.cityId as any)._id : lead.cityId;
+      if (!leadCityId || !currentFilters.selectedCityIds.includes(leadCityId.toString())) {
+        return false;
+      }
+    }
+
+    // 7. Search
+    if (currentFilters.search && currentFilters.search.trim() !== '') {
+      const term = currentFilters.search.trim().toLowerCase();
+      const nameMatch = lead.name?.toLowerCase().includes(term);
+      const companyMatch = lead.company?.toLowerCase().includes(term);
+      const emailMatch = lead.email?.toLowerCase().includes(term);
+      const phoneMatch = lead.phone?.toLowerCase().includes(term);
+      const serialMatch = lead.serialNumber?.toString().includes(term);
+      if (!nameMatch && !companyMatch && !emailMatch && !phoneMatch && !serialMatch) {
+        return false;
+      }
+    }
+
+    return true;
+  }, []);
+
+  const handleLeadUpdated = useCallback((updatedLead: Lead) => {
+    if (!updatedLead) return;
+
+    const matches = checkLeadMatchesFilters(updatedLead, filtersRef.current);
+
+    if (matches) {
+      // Lead still matches active filters: update immediately in place
+      setLeads((prev) => prev.map((l) => (l._id === updatedLead._id ? updatedLead : l)));
+    } else {
+      // Edge case: lead no longer matches active filter!
+      // Remove lead from current filtered list immediately
+      setLeads((prev) => prev.filter((l) => l._id !== updatedLead._id));
+
+      // Recalculate pagination correctly without resetting to Page 1 unless required
+      setTotalLeads((prevTotal) => {
+        const newTotal = Math.max(0, prevTotal - 1);
+        const newPages = Math.max(1, Math.ceil(newTotal / 50));
+        setTotalPages(newPages);
+        setPage((prevPage) => Math.min(prevPage, newPages));
+        return newTotal;
+      });
+    }
+
+    // Always update selectedLead if this lead is currently open in modal
+    setSelectedLead((prev) => (prev?._id === updatedLead._id ? updatedLead : prev));
+  }, [checkLeadMatchesFilters]);
+
   // Real-time Socket synchronization
   useEffect(() => {
     if (!socket) return;
 
     const handleUpdate = (updatedLead: any) => {
       if (!updatedLead) return;
-
-      // Update local leads array if the lead is in the list
-      setLeads((prev) => prev.map((l) => (l._id === updatedLead._id ? updatedLead : l)));
-
-      // If the updated lead is the one currently in detail modal, update it!
-      if (selectedLead && selectedLead._id === updatedLead._id) {
-        setSelectedLead(updatedLead);
-      }
+      handleLeadUpdated(updatedLead);
     };
 
     const handleCreated = () => {
@@ -131,23 +233,23 @@ export const AdminLeadsPage: React.FC = () => {
 
     socket.on('lead_created', handleCreated);
     socket.on('lead_updated', handleUpdate);
+    socket.on('lead_assigned', handleUpdate);
     socket.on('leads_imported', handleCreated);
 
     return () => {
       socket.off('lead_created', handleCreated);
       socket.off('lead_updated', handleUpdate);
+      socket.off('lead_assigned', handleUpdate);
       socket.off('leads_imported', handleCreated);
     };
-  }, [socket, selectedLead, fetchAllLeads]);
+  }, [socket, handleLeadUpdated, fetchAllLeads]);
 
   const handleAssignLead = async (leadId: string, targetCallerId: string) => {
     try {
       const res = await adminService.assignLead(leadId, targetCallerId);
-      if (res.success) {
+      if (res.success && res.lead) {
         toast('Lead Reassigned', res.message, 'success');
-        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
-        if (selectedLead?._id === leadId) setSelectedLead(res.lead);
-        fetchAllLeads();
+        handleLeadUpdated(res.lead);
       }
     } catch (err: any) {
       toast('Reassign Failed', err.message, 'error');
@@ -161,11 +263,9 @@ export const AdminLeadsPage: React.FC = () => {
   ) => {
     try {
       const res = await leadService.addNote(leadId, content, options);
-      if (res.success) {
+      if (res.success && res.lead) {
         toast('Conversation Update Saved', 'Note logged to prospect', 'success');
-        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
-        if (selectedLead?._id === leadId) setSelectedLead(res.lead);
-        fetchAllLeads();
+        handleLeadUpdated(res.lead);
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -175,11 +275,9 @@ export const AdminLeadsPage: React.FC = () => {
   const handleUpdateStatus = async (leadId: string, newStatus: any) => {
     try {
       const res = await leadService.updateLead(leadId, { status: newStatus });
-      if (res.success) {
+      if (res.success && res.lead) {
         toast('Status Changed', `Lead status changed to ${newStatus}`, 'success');
-        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
-        if (selectedLead?._id === leadId) setSelectedLead(res.lead);
-        fetchAllLeads();
+        handleLeadUpdated(res.lead);
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -189,11 +287,9 @@ export const AdminLeadsPage: React.FC = () => {
   const handleCompleteFollowUp = async (leadId: string, nextDate?: string) => {
     try {
       const res = await leadService.completeFollowUp(leadId, nextDate);
-      if (res.success) {
+      if (res.success && res.lead) {
         toast('Follow-up Completed', 'Marked follow-up as done', 'success');
-        setLeads((prev) => prev.map((l) => (l._id === leadId ? res.lead : l)));
-        if (selectedLead?._id === leadId) setSelectedLead(res.lead);
-        fetchAllLeads();
+        handleLeadUpdated(res.lead);
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');

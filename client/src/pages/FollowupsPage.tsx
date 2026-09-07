@@ -9,6 +9,7 @@ import { CityFilterDropdown } from '../components/leads/CityFilterDropdown';
 import { LoadingSpinner } from '../components/common/SkeletonLoader';
 import { useToast } from '../context/ToastContext';
 import { cityService } from '../services/cityService';
+import { isFollowUpDue } from '../utils/formatters';
 import { CalendarClock } from 'lucide-react';
 
 export const FollowupsPage: React.FC = () => {
@@ -54,13 +55,32 @@ export const FollowupsPage: React.FC = () => {
     fetchDueLeads();
   }, [selectedCityIds]);
 
+  const handleLeadUpdated = (updatedLead: Lead) => {
+    if (!updatedLead) return;
+    const isDue = isFollowUpDue(updatedLead.nextFollowUpDate);
+    const cityMatches = selectedCityIds.length === 0 || (
+      updatedLead.cityId && (
+        selectedCityIds.includes(typeof updatedLead.cityId === 'object' ? (updatedLead.cityId as any)._id : updatedLead.cityId)
+      )
+    );
+
+    if (isDue && cityMatches) {
+      setLeads((prev) => prev.map((l) => (l._id === updatedLead._id ? updatedLead : l)));
+    } else {
+      setLeads((prev) => prev.filter((l) => l._id !== updatedLead._id));
+    }
+
+    if (selectedLead?._id === updatedLead._id) {
+      setSelectedLead(updatedLead);
+    }
+  };
+
   const handleCompleteFollowUp = async (leadId: string, nextDate?: string) => {
     try {
       const res = await leadService.completeFollowUp(leadId, nextDate);
-      if (res.success) {
+      if (res.success && res.lead) {
         toast('Follow-up Marked Done', 'Updated follow-up status', 'success');
-        fetchDueLeads();
-        if (selectedLead?._id === leadId) setSelectedLead(res.lead);
+        handleLeadUpdated(res.lead);
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -70,10 +90,9 @@ export const FollowupsPage: React.FC = () => {
   const handleAddNote = async (leadId: string, content: string) => {
     try {
       const res = await leadService.addNote(leadId, content);
-      if (res.success) {
+      if (res.success && res.lead) {
         toast('Note Added', 'Note saved to prospect record', 'success');
-        fetchDueLeads();
-        if (selectedLead?._id === leadId) setSelectedLead(res.lead);
+        handleLeadUpdated(res.lead);
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
@@ -83,10 +102,9 @@ export const FollowupsPage: React.FC = () => {
   const handleUpdateStatus = async (leadId: string, status: any) => {
     try {
       const res = await leadService.updateLead(leadId, { status });
-      if (res.success) {
+      if (res.success && res.lead) {
         toast('Status Changed', `Status updated to ${status}`, 'success');
-        fetchDueLeads();
-        if (selectedLead?._id === leadId) setSelectedLead(res.lead);
+        handleLeadUpdated(res.lead);
       }
     } catch (err: any) {
       toast('Error', err.message, 'error');
