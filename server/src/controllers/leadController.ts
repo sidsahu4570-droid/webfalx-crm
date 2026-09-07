@@ -116,11 +116,11 @@ export const getLeads = async (req: Request, res: Response) => {
 
     // Status filter rules:
     // When status is explicitly specified and not 'All', filter by that status.
-    // When status is 'All' or not specified, exclude 'Not Interested' and 'Closed' by default.
+    // When status is 'All' or not specified, exclude 'Not Interested', 'Closed', and 'Not Picked' by default.
     if (status && status !== 'All') {
       query.status = status;
     } else {
-      query.status = { $nin: ['Not Interested', 'Closed'] };
+      query.status = { $nin: ['Not Interested', 'Closed', 'Not Picked'] };
     }
 
     // Sorting

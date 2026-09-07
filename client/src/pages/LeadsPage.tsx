@@ -170,7 +170,7 @@ export const LeadsPage: React.FC = () => {
   const checkLeadMatchesFilters = useCallback((lead: Lead, currentFilters: typeof filtersRef.current): boolean => {
     // 1. Status
     if (currentFilters.status === 'All') {
-      if (lead.status === 'Not Interested' || lead.status === 'Closed') {
+      if (lead.status === 'Not Interested' || lead.status === 'Closed' || lead.status === 'Not Picked') {
         return false;
       }
     } else if (lead.status !== currentFilters.status) {
