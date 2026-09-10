@@ -197,9 +197,9 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
             </div>
           </div>
 
-          {/* Quick Status & Permanent Interested Controls */}
-          <div className="flex flex-col items-end gap-2">
-            {onTogglePermanentInterested && (
+          {/* Permanent Interested Controls */}
+          {onTogglePermanentInterested && (
+            <div className="flex flex-col items-end gap-2">
               <button
                 type="button"
                 onClick={() => onTogglePermanentInterested(lead)}
@@ -212,24 +212,8 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 <Star className={`w-3.5 h-3.5 ${lead.isPermanentInterested ? 'fill-amber-400 text-amber-500' : 'text-slate-400'}`} />
                 <span>{lead.isPermanentInterested ? 'Remove Permanent Interested' : 'Mark as Permanent Interested'}</span>
               </button>
-            )}
-            <div className="flex items-center space-x-2">
-              <span className="text-xs font-semibold text-slate-500">Update Status:</span>
-              <select
-                value={lead.status}
-                onChange={(e) => onUpdateStatus(lead._id, e.target.value as LeadStatus)}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="New">New</option>
-                <option value="Interested">Interested</option>
-                <option value="Follow-up">Follow-up</option>
-                <option value="Meeting Scheduled">Meeting Scheduled</option>
-                <option value="Converted">Converted</option>
-                <option value="Not Interested">Not Interested</option>
-                <option value="Closed">Closed</option>
-              </select>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Mobile Header Card */}
@@ -310,24 +294,6 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               <span>{lead.isPermanentInterested ? 'Remove Permanent Interested' : 'Mark as Permanent Interested'}</span>
             </button>
           )}
-
-          {/* Status Dropdown 100% Width */}
-          <div className="pt-2 border-t border-slate-200 dark:border-slate-700/60 space-y-1.5">
-            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Update Status</label>
-            <select
-              value={lead.status}
-              onChange={(e) => onUpdateStatus(lead._id, e.target.value as LeadStatus)}
-              className="w-full h-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 text-xs font-bold text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="New">New</option>
-              <option value="Interested">Interested</option>
-              <option value="Follow-up">Follow-up</option>
-              <option value="Meeting Scheduled">Meeting Scheduled</option>
-              <option value="Converted">Converted</option>
-              <option value="Not Interested">Not Interested</option>
-              <option value="Closed">Closed</option>
-            </select>
-          </div>
         </div>
 
         {/* Desktop Contact Info & Followup Controls */}
