@@ -9,6 +9,7 @@ import { City } from '../models/City';
 import { logActivity } from '../services/activityService';
 import { recordLeadActivity } from '../services/activityTracker';
 import { emitToUser, emitToAdmin } from '../socket/socketHandler';
+import { sanitizeLeadDoc } from '../utils/sanitizeLeads';
 
 export const getLeads = async (req: Request, res: Response) => {
   try {
@@ -243,6 +244,11 @@ export const getLeads = async (req: Request, res: Response) => {
       leadsPromise
     ]);
 
+    // Sanitize any previously reassigned leads on-the-fly to restore genuine latestUpdate and updatedAt
+    for (const lead of leads) {
+      await sanitizeLeadDoc(lead);
+    }
+
     res.json({
       success: true,
       leads,
@@ -268,6 +274,8 @@ export const getLeadById = async (req: Request, res: Response) => {
     if (!lead) {
       return res.status(404).json({ success: false, message: 'Lead not found' });
     }
+
+    await sanitizeLeadDoc(lead);
 
     if (user.role === 'caller' && lead.userId.toString() !== user.id) {
       return res.status(403).json({ success: false, message: 'Access denied to this lead' });

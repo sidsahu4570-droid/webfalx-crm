@@ -44,26 +44,43 @@ export const formatTimeAgo = (dateStr?: string | Date): string => {
 export const getGenuineLeadUpdate = (lead: any): { latestUpdate: string; updatedAt: string | Date } => {
   if (!lead) return { latestUpdate: 'No updates logged yet', updatedAt: '' };
 
-  if (lead.latestUpdate && /reassigned/i.test(lead.latestUpdate)) {
-    if (lead.notes && Array.isArray(lead.notes) && lead.notes.length > 0) {
-      const sortedNotes = [...lead.notes].sort(
-        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      return {
-        latestUpdate: sortedNotes[0].content,
-        updatedAt: sortedNotes[0].createdAt || lead.createdAt || lead.updatedAt
-      };
+  let latestUpdate = lead.latestUpdate || 'No updates logged yet';
+  let updatedAt = lead.updatedAt;
+
+  const isReassignedText = latestUpdate && /reassigned|reassign/i.test(latestUpdate);
+
+  if (lead.notes && Array.isArray(lead.notes) && lead.notes.length > 0) {
+    const sortedNotes = [...lead.notes].sort(
+      (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const validNote = sortedNotes.find((n: any) => n.content && !/reassigned/i.test(n.content));
+
+    if (isReassignedText) {
+      latestUpdate = validNote ? validNote.content : 'Lead created';
     }
-    return {
-      latestUpdate: 'Lead created',
-      updatedAt: lead.createdAt || lead.updatedAt
-    };
+
+    const latestNoteDate = validNote ? validNote.createdAt : sortedNotes[0].createdAt;
+    if (latestNoteDate && (isReassignedText || lead.reassignedAt)) {
+      const noteTime = new Date(latestNoteDate).getTime();
+      const updatedTime = new Date(lead.updatedAt).getTime();
+      if (updatedTime > noteTime + 10000) {
+        updatedAt = latestNoteDate;
+      }
+    }
+  } else if (isReassignedText || lead.reassignedAt) {
+    if (isReassignedText) {
+      latestUpdate = 'Lead created';
+    }
+    if (lead.createdAt) {
+      const createdTime = new Date(lead.createdAt).getTime();
+      const updatedTime = new Date(lead.updatedAt).getTime();
+      if (updatedTime > createdTime + 10000) {
+        updatedAt = lead.createdAt;
+      }
+    }
   }
 
-  return {
-    latestUpdate: lead.latestUpdate || 'No updates logged yet',
-    updatedAt: lead.updatedAt
-  };
+  return { latestUpdate, updatedAt };
 };
 
 export const isFollowUpDue = (dateStr?: string | Date): boolean => {
