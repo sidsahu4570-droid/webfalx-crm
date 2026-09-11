@@ -60,14 +60,14 @@ export const getGenuineLeadUpdate = (lead: any): { latestUpdate: string; updated
     }
 
     const latestNoteDate = validNote ? validNote.createdAt : sortedNotes[0].createdAt;
-    if (latestNoteDate && (isReassignedText || lead.reassignedAt)) {
+    if (latestNoteDate) {
       const noteTime = new Date(latestNoteDate).getTime();
       const updatedTime = new Date(lead.updatedAt).getTime();
       if (updatedTime > noteTime + 10000) {
         updatedAt = latestNoteDate;
       }
     }
-  } else if (isReassignedText || lead.reassignedAt) {
+  } else {
     if (isReassignedText) {
       latestUpdate = 'Lead created';
     }

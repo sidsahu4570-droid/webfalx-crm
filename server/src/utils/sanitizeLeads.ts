@@ -7,7 +7,7 @@ export const sanitizeLeadDoc = async (lead: any): Promise<boolean> => {
   let modified = false;
   const isReassignedText = lead.latestUpdate && /reassigned|reassign/i.test(lead.latestUpdate);
 
-  // 1. Restore genuine latestUpdate text
+  // 1. Restore genuine latestUpdate text if currently holding reassignment text
   if (isReassignedText) {
     let genuineText = '';
 
@@ -40,7 +40,7 @@ export const sanitizeLeadDoc = async (lead: any): Promise<boolean> => {
     modified = true;
   }
 
-  // 2. Restore genuine updatedAt timestamp
+  // 2. Restore genuine updatedAt timestamp if it was updated without a corresponding note/activity
   let genuineDate: Date | null = null;
 
   if (lead.notes && lead.notes.length > 0) {
@@ -55,11 +55,11 @@ export const sanitizeLeadDoc = async (lead: any): Promise<boolean> => {
   }
 
   if (genuineDate) {
-    const currentUpdated = new Date(lead.updatedAt).getTime();
+    const currentUpdatedTime = new Date(lead.updatedAt).getTime();
     const genuineTime = genuineDate.getTime();
 
-    // If current updatedAt was overwritten by reassignment (more than 10s newer than genuine activity)
-    if (isReassignedText || (lead.reassignedAt && currentUpdated > genuineTime + 10000)) {
+    // If current updatedAt is newer than genuine activity date (over 10s gap, e.g. from a past reassignment)
+    if (currentUpdatedTime > genuineTime + 10000) {
       lead.updatedAt = genuineDate;
       modified = true;
     }
