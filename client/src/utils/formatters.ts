@@ -41,6 +41,31 @@ export const formatTimeAgo = (dateStr?: string | Date): string => {
   }
 };
 
+export const getGenuineLeadUpdate = (lead: any): { latestUpdate: string; updatedAt: string | Date } => {
+  if (!lead) return { latestUpdate: 'No updates logged yet', updatedAt: '' };
+
+  if (lead.latestUpdate && /reassigned/i.test(lead.latestUpdate)) {
+    if (lead.notes && Array.isArray(lead.notes) && lead.notes.length > 0) {
+      const sortedNotes = [...lead.notes].sort(
+        (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      return {
+        latestUpdate: sortedNotes[0].content,
+        updatedAt: sortedNotes[0].createdAt || lead.createdAt || lead.updatedAt
+      };
+    }
+    return {
+      latestUpdate: 'Lead created',
+      updatedAt: lead.createdAt || lead.updatedAt
+    };
+  }
+
+  return {
+    latestUpdate: lead.latestUpdate || 'No updates logged yet',
+    updatedAt: lead.updatedAt
+  };
+};
+
 export const isFollowUpDue = (dateStr?: string | Date): boolean => {
   if (!dateStr) return false;
   const date = new Date(dateStr);

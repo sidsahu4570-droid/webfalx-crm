@@ -7,7 +7,8 @@ import {
   getPriorityBadgeStyle,
   formatDate,
   formatTimeAgo,
-  isFollowUpDue
+  isFollowUpDue,
+  getGenuineLeadUpdate
 } from '../../utils/formatters';
 import {
   Building,
@@ -46,6 +47,7 @@ export const LeadCard: React.FC<LeadCardProps> = ({
 }) => {
   const isDue = isFollowUpDue(lead.nextFollowUpDate);
   const cardStyle = getStatusCardStyle(lead.status);
+  const genuineUpdate = getGenuineLeadUpdate(lead);
 
   return (
     <div
@@ -125,10 +127,10 @@ export const LeadCard: React.FC<LeadCardProps> = ({
         {/* Latest Update Box */}
         <div className="bg-white/80 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 my-3 shadow-2xs">
           <p className="text-[11px] text-slate-700 dark:text-slate-300 italic line-clamp-2 font-medium">
-            "{lead.latestUpdate || 'No updates logged yet'}"
+            "{genuineUpdate.latestUpdate || 'No updates logged yet'}"
           </p>
           <span className="text-[10px] text-slate-400 mt-1 block">
-            Updated {formatTimeAgo(lead.updatedAt)}
+            Updated {formatTimeAgo(genuineUpdate.updatedAt)}
           </span>
         </div>
       </div>

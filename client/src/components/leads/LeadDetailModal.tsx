@@ -7,7 +7,8 @@ import {
   formatDate,
   formatDateTime,
   formatTimeAgo,
-  isFollowUpDue
+  isFollowUpDue,
+  getGenuineLeadUpdate
 } from '../../utils/formatters';
 import {
   Building,
@@ -74,6 +75,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
   if (!lead) return null;
 
   const isDue = isFollowUpDue(lead.nextFollowUpDate);
+  const genuineUpdate = getGenuineLeadUpdate(lead);
 
   const presetTemplates = [
     'Client said call after 2 days.',
@@ -192,7 +194,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center">
                 <Clock className="w-3 h-3 mr-1 text-slate-400" />
-                Last updated {formatTimeAgo(lead.updatedAt)}
+                Last updated {formatTimeAgo(genuineUpdate.updatedAt)}
               </p>
             </div>
           </div>
@@ -236,7 +238,7 @@ export const LeadDetailModal: React.FC<LeadDetailModalProps> = ({
                 </div>
                 <div className="flex items-center">
                   <Clock className="w-3.5 h-3.5 mr-1 text-slate-400 shrink-0" />
-                  Last Updated: <span className="ml-1 text-slate-700 dark:text-slate-300 font-medium">{formatTimeAgo(lead.updatedAt)}</span>
+                  Last Updated: <span className="ml-1 text-slate-700 dark:text-slate-300 font-medium">{formatTimeAgo(genuineUpdate.updatedAt)}</span>
                 </div>
               </div>
             </div>

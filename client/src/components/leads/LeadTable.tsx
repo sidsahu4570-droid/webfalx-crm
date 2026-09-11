@@ -15,7 +15,8 @@ import {
   getPriorityBadgeStyle,
   formatDate,
   formatTimeAgo,
-  isFollowUpDue
+  isFollowUpDue,
+  getGenuineLeadUpdate
 } from '../../utils/formatters';
 import {
   Phone,
@@ -323,6 +324,7 @@ export const LeadTable: React.FC<LeadTableProps> = ({
               const pageNum = currentPage || 1;
               const sizeNum = pageSize || leads.length || 50;
               const sNoDisplay = (pageNum - 1) * sizeNum + idx + 1;
+              const genuineUpdate = getGenuineLeadUpdate(lead);
 
               return (
                 <tr
@@ -422,10 +424,10 @@ export const LeadTable: React.FC<LeadTableProps> = ({
                   {/* Latest Update */}
                   <td className="py-4 px-4 max-w-[280px]">
                     <p className="text-xs text-slate-800 dark:text-slate-200 line-clamp-2 font-medium">
-                      "{lead.latestUpdate || 'No notes added yet'}"
+                      "{genuineUpdate.latestUpdate || 'No notes added yet'}"
                     </p>
                     <span className="text-[10px] text-slate-400 mt-1 block">
-                      Updated {formatTimeAgo(lead.updatedAt)}
+                      Updated {formatTimeAgo(genuineUpdate.updatedAt)}
                     </span>
                   </td>
 

@@ -6,7 +6,8 @@ import {
   getPriorityBadgeStyle,
   formatDate,
   formatTimeAgo,
-  isFollowUpDue
+  isFollowUpDue,
+  getGenuineLeadUpdate
 } from '../../utils/formatters';
 import {
   Phone,
@@ -55,6 +56,7 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
   showCallerInfo = false
 }) => {
   const isDue = isFollowUpDue(lead.nextFollowUpDate);
+  const genuineUpdate = getGenuineLeadUpdate(lead);
 
   return (
     <div
@@ -197,10 +199,10 @@ export const LeadCardMobile: React.FC<LeadCardMobileProps> = ({
           Latest Logged Note
         </span>
         <p className="text-xs text-slate-800 dark:text-slate-200 italic font-medium break-words leading-relaxed">
-          "{lead.latestUpdate || 'No updates logged yet'}"
+          "{genuineUpdate.latestUpdate || 'No updates logged yet'}"
         </p>
         <span className="text-[9px] text-slate-405 block mt-1.5 font-semibold">
-          Updated {formatTimeAgo(lead.updatedAt)}
+          Updated {formatTimeAgo(genuineUpdate.updatedAt)}
         </span>
       </div>
 

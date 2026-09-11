@@ -32,6 +32,7 @@ import salaryRoutes from './routes/salaryRoutes';
 import salaryPaymentRoutes from './routes/salaryPaymentRoutes';
 import resourceRoutes from './routes/resourceRoutes';
 import { seedDatabase } from './utils/seed';
+import { sanitizeReassignedLeadsInDB } from './utils/sanitizeLeads';
 
 const app = express();
 const server = http.createServer(app);
@@ -115,6 +116,7 @@ const startServer = async () => {
     await seedDefaultCategories();
     await seedDefaultCities();
     await seedDatabase();
+    await sanitizeReassignedLeadsInDB();
 
     server.listen(env.PORT, () => {
       console.log(`==================================================`);
