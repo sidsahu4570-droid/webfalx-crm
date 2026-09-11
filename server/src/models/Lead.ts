@@ -50,6 +50,7 @@ export interface ILead extends Document {
   completedFollowUps: number;
   lastContactDate?: Date;
   nextFollowUpDate?: Date;
+  reassignedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -187,6 +188,9 @@ const leadSchema = new Schema<ILead>(
     nextFollowUpDate: {
       type: Date,
       index: true
+    },
+    reassignedAt: {
+      type: Date
     }
   },
   {

@@ -1131,11 +1131,12 @@ export const bulkAssignLeads = async (req: Request, res: Response) => {
       const oldCallerId = lead.userId ? lead.userId.toString() : null;
       const oldCallerName = lead.callerName || 'Unassigned';
 
-      // Reassign only caller info, preserving everything else
+      // Reassign caller info while preserving original updatedAt timestamp and latestUpdate note
       lead.userId = targetCaller._id;
       lead.callerName = targetCaller.name;
       lead.callerEmail = targetCaller.email;
-      await lead.save();
+      lead.reassignedAt = new Date();
+      await lead.save({ timestamps: false });
 
       // Log audit trail log (ASSIGN_LEAD)
       await logActivity({

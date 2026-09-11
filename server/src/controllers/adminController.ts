@@ -211,9 +211,10 @@ export const assignLead = async (req: Request, res: Response) => {
     lead.userId = targetCaller._id as any;
     lead.callerName = targetCaller.name;
     lead.callerEmail = targetCaller.email;
-    lead.latestUpdate = `Reassigned to caller ${targetCaller.name} by Admin`;
+    lead.reassignedAt = new Date();
 
-    await lead.save();
+    // Reassignment does NOT alter genuine lead update timestamp or latestUpdate note
+    await lead.save({ timestamps: false });
 
     await logActivity({
       userId: adminUser.id,

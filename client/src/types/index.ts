@@ -68,6 +68,7 @@ export interface Lead {
   completedFollowUps: number;
   lastContactDate?: string;
   nextFollowUpDate?: string;
+  reassignedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
